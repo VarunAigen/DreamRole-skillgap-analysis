@@ -1,0 +1,114 @@
+[
+    {
+        "name": "Priya Sharma",
+        "domain": "Frontend Development",
+        "company": "Google",
+        "experience": "6 years",
+        "linkedin": "https://linkedin.com/in/priya-sharma"
+    },
+    {
+        "name": "Arjun Mehta",
+        "domain": "Full Stack Development",
+        "company": "Flipkart",
+        "experience": "7 years",
+        "linkedin": "https://linkedin.com/in/arjun-mehta"
+    },
+    {
+        "name": "Anjali Rao",
+        "domain": "Data Science",
+        "company": "Amazon",
+        "experience": "5 years",
+        "linkedin": "https://linkedin.com/in/anjali-rao"
+    },
+    {
+        "name": "Rahul Verma",
+        "domain": "DevOps Engineering",
+        "company": "Microsoft",
+        "experience": "8 years",
+        "linkedin": "https://linkedin.com/in/rahul-verma"
+    },
+    {
+        "name": "Sneha Pillai",
+        "domain": "UI/UX Design",
+        "company": "Zomato",
+        "experience": "4 years",
+        "linkedin": "https://linkedin.com/in/sneha-pillai"
+    },
+    {
+        "name": "Kiran Kumar",
+        "domain": "Machine Learning Engineering",
+        "company": "NVIDIA",
+        "experience": "5 years",
+        "linkedin": "https://linkedin.com/in/kiran-kumar"
+    },
+    {
+        "name": "Deepika Nair",
+        "domain": "Backend Development",
+        "company": "Razorpay",
+        "experience": "6 years",
+        "linkedin": "https://linkedin.com/in/deepika-nair"
+    },
+    {
+        "name": "Vikram Singh",
+        "domain": "Mobile App Development",
+        "company": "Swiggy",
+        "experience": "4 years",
+        "linkedin": "https://linkedin.com/in/vikram-singh"
+    },
+    {
+        "name": "Rohan Das",
+        "domain": "Cloud Engineering",
+        "company": "Infosys",
+        "experience": "9 years",
+        "linkedin": "https://linkedin.com/in/rohan-das"
+    },
+    {
+        "name": "Meera Krishnan",
+        "domain": "Data Engineering",
+        "company": "Airtel",
+        "experience": "5 years",
+        "linkedin": "https://linkedin.com/in/meera-krishnan"
+    },
+    {
+        "name": "Aditya Patel",
+        "domain": "AI Engineering",
+        "company": "Jio AI Labs",
+        "experience": "3 years",
+        "linkedin": "https://linkedin.com/in/aditya-patel"
+    },
+    {
+        "name": "Sonia Gupta",
+        "domain": "Cybersecurity Analysis",
+        "company": "Wipro",
+        "experience": "7 years",
+        "linkedin": "https://linkedin.com/in/sonia-gupta"
+    },
+    {
+        "name": "Tejas Kulkarni",
+        "domain": "Blockchain Development",
+        "company": "Polygon",
+        "experience": "4 years",
+        "linkedin": "https://linkedin.com/in/tejas-kulkarni"
+    },
+    {
+        "name": "Nisha Reddy",
+        "domain": "QA Engineering",
+        "company": "Freshworks",
+        "experience": "5 years",
+        "linkedin": "https://linkedin.com/in/nisha-reddy"
+    },
+    {
+        "name": "Harish Iyer",
+        "domain": "Database Engineering",
+        "company": "Oracle India",
+        "experience": "10 years",
+        "linkedin": "https://linkedin.com/in/harish-iyer"
+    },
+    {
+        "name": "Divya Menon",
+        "domain": "NLP Engineering",
+        "company": "Sarvam AI",
+        "experience": "4 years",
+        "linkedin": "https://linkedin.com/in/divya-menon"
+    }
+]

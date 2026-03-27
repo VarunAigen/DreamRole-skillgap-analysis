@@ -1,0 +1,70 @@
+
+
+--- ppt/slides/slide1.xml ---
+TITLE
+	KPR Institute of Engineering and Technology
+                 INNOVSENSE 2026
+Team Head  &amp; Dept         :
+Department 
+Students 
+2)
+3)
+4)
+5)
+1) Name 1 (Roll No…..) 
+2) Name 2 (Roll No…..) 
+3) Name 3 (Roll No…..) 
+4) Name 4 (Roll No…..) 
+5) Name 5 (Roll No…..) 
+
+
+--- ppt/slides/slide2.xml ---
+Problem Statement &amp; Tech Domain (Include image)
+2
+
+
+--- ppt/slides/slide3.xml ---
+Novelty 
+3
+Existing method
+Suggested method
+Reference (after 2020 research papers)
+
+
+--- ppt/slides/slide4.xml ---
+Required Hardware/Software
+4
+
+
+--- ppt/slides/slide5.xml ---
+Methodology (Block diagram/Circuit diagram/Flow diagram) 
+5
+
+
+--- ppt/slides/slide6.xml ---
+Simulation developed
+6
+
+
+--- ppt/slides/slide7.xml ---
+Output generated ( Comparison Graphs, Table, Diagram only) 
+7
+
+
+--- ppt/slides/slide8.xml ---
+Project demo video
+8
+
+
+--- ppt/slides/slide9.xml ---
+Rate the project Suitability for/patent/research/product/Startup on scale 1(low) -3(High)
+9
+Suitability
+Scale
+Comment
+Patent
+Research
+Product
+Startup
+Which Industry will use this product?
+Are you willing to make the project as a StartUp?
