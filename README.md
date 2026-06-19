@@ -8,19 +8,18 @@ In today's fast-paced job market, candidates often struggle to understand exactl
 
 ## AI Models & Agent Architecture
 
-DreamRole utilizes advanced LLMs (Large Language Models) to power its core features. The platform employs a multi-agent architecture where different AI models handle specific tasks to ensure optimal performance, accuracy, and latency.
+DreamRole utilizes advanced LLMs (Large Language Models) to power its core features. The platform employs a multi-agent architecture where different AI tasks are handled optimally using the OpenAI API.
 
-- **Gemini 1.5 Flash**: 
-  - **Resume Parsing & Skill Extraction Agent**: Handles the fast and efficient extraction of skills, education, and experience from user-uploaded resumes (PDFs).
-  - **Skill Gap Analysis Agent**: Compares extracted skills against our curated role requirements to identify missing core skills and generate a match percentage.
-  - **Roadmap Generation Agent**: Quickly generates personalized, step-by-step learning roadmaps based on the identified skill gaps.
-  
-- **Gemini 1.5 Pro**:
-  - **Video Interview Agent (Mock Interviews)**: Powers the conversational AI for both technical and behavioral mock interviews. It handles complex context, evaluates user responses in real-time, and provides nuanced, constructive feedback and scoring.
+- **OpenAI `gpt-4o-mini`**:
+  - **Resume Parsing & Skill Extraction Agent**: Handles the fast and efficient extraction of skills, education, and experience from user-uploaded resumes (PDFs) with strict JSON structuring.
+  - **Skill Gap Analysis & Feedback Agent**: Compares extracted skills against our curated role requirements to identify missing core skills, generating holistic and highly actionable feedback.
+  - **Roadmap Generation Agent**: Quickly generates personalized, step-by-step career learning roadmaps based on the identified skill gaps.
+  - **Video Interview & Evaluation Agent (Mock Interviews)**: Powers the conversational AI for both technical and behavioral mock interviews. It generates context-aware questions from the candidate's resume, defines grading rubrics (model answers), evaluates user responses in real-time, and provides nuanced, constructive scoring.
+  - **Mentor Connect Agent**: Acts as an industry persona, offering real-time, domain-specific mentorship chat based on curated mentor backgrounds.
 
 ## Key Features
 - **Skill Gap Analysis**: Compares your resume and current skills to your dream role's curated requirements.
-- **AI-Powered Video Interviews**: Simulates realistic technical and behavioral interviews using the Gemini 1.5 Pro model.
+- **AI-Powered Video Interviews**: Simulates realistic technical and behavioral interviews using the OpenAI `gpt-4o-mini` model.
 - **Mentor Connect**: Chat in real-time with industry professionals and mentors.
 - **Mentor Dashboard**: Real mentors have dedicated dashboards to track mentees, view their profiles, and analyze their performance.
 - **Admin Dashboard**: Comprehensive admin tools for user and mentor management, including adding real mentors to the platform.
@@ -35,7 +34,7 @@ While matching against our curated 6-8 core skills provides an excellent foundat
 ## Tech Stack
 - **Frontend**: React, Vite, Tailwind CSS
 - **Backend**: Node.js, Express, MongoDB / SQLite
-- **AI Integration**: Google Gemini API (Gemini 1.5 Flash & Gemini 1.5 Pro)
+- **AI Integration**: OpenAI API (`gpt-4o-mini`) for interviews, skill extraction, and gap analysis
 
 ## Getting Started
 
