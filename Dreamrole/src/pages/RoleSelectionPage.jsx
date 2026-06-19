@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { authFetch } from '../lib/api'
 import { useNavigate } from 'react-router-dom'
 import { Target, ArrowRight, ChevronDown, Loader } from 'lucide-react'
 import { useApp } from '../context/AppContext'
@@ -16,7 +17,7 @@ export default function RoleSelectionPage() {
   const finalRole = custom.trim() || selectedRole
 
   useEffect(() => {
-    fetch('/api/recommendations?grouped=true')
+    authFetch('/api/recommendations?grouped=true')
       .then(r => r.json())
       .then(data => { 
         if (data.domains) setDomains(data.domains)
@@ -44,7 +45,7 @@ export default function RoleSelectionPage() {
       <div className="card space-y-5">
         {/* Domain Dropdown */}
         <div>
-          <label className="block text-sm font-semibold text-slate-700 mb-2">
+          <label className="block text-sm font-semibold text-white/80 mb-2">
             1. Select a Domain {loading && <Loader size={12} className="inline animate-spin ml-1" />}
           </label>
           <div className="relative">
@@ -63,13 +64,13 @@ export default function RoleSelectionPage() {
                 <option key={d} value={d}>{d}</option>
               ))}
             </select>
-            <ChevronDown size={16} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+            <ChevronDown size={16} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/30 pointer-events-none" />
           </div>
         </div>
 
         {/* Role Dropdown */}
         <div>
-          <label className="block text-sm font-semibold text-slate-700 mb-2">
+          <label className="block text-sm font-semibold text-white/80 mb-2">
             2. Choose your Target Role
           </label>
           <div className="relative">
@@ -84,20 +85,20 @@ export default function RoleSelectionPage() {
                 <option key={r} value={r}>{r}</option>
               ))}
             </select>
-            <ChevronDown size={16} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+            <ChevronDown size={16} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/30 pointer-events-none" />
           </div>
         </div>
 
         {/* Divider */}
         <div className="flex items-center gap-3">
-          <div className="flex-1 h-px bg-surface-200" />
-          <span className="text-xs text-slate-400 font-medium">OR</span>
-          <div className="flex-1 h-px bg-surface-200" />
+          <div className="flex-1 h-px bg-white/[0.06]" />
+          <span className="text-xs text-white/30 font-medium">OR</span>
+          <div className="flex-1 h-px bg-white/[0.06]" />
         </div>
 
         {/* Custom input */}
         <div>
-          <label className="block text-sm font-semibold text-slate-700 mb-2">Enter a custom role</label>
+          <label className="block text-sm font-semibold text-white/80 mb-2">Enter a custom role</label>
           <input
             type="text"
             placeholder="e.g. Blockchain Developer"
@@ -109,9 +110,9 @@ export default function RoleSelectionPage() {
 
         {/* Selected badge */}
         {finalRole && (
-          <div className="flex items-center gap-2 p-3 bg-brand-50 border border-brand-200 rounded-xl">
-            <Target size={15} className="text-brand-600" />
-            <span className="text-sm font-semibold text-brand-700">Selected: {finalRole}</span>
+          <div className="flex items-center gap-2 p-3 bg-indigo-500/10 border border-indigo-500/25 rounded-xl">
+            <Target size={15} className="text-indigo-400" />
+            <span className="text-sm font-semibold text-indigo-300">Selected: {finalRole}</span>
           </div>
         )}
 

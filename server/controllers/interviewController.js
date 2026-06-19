@@ -1,12 +1,17 @@
 const { generateInterviewQuestions, evaluateInterviewAnswer } = require('../services/openaiService');
+const { getRequiredSkillsCategorized } = require('../services/dataService');
+
+// In-memory store for model answer points (keyed by session) - not exposed to frontend
+const modelAnswerStore = new Map();
 
 /**
  * POST /api/interview/generate
  * Generate open-ended interview questions from resume text.
+ * Now injects role-specific skills from dataset for grounded questions.
  */
 async function generateInterviewQuestionsController(req, res) {
     try {
-        const { resume_text, role, count = 7 } = req.body;
+        const { resume_text, role, count = 7, user_name } = req.body;
 
         if (!resume_text) {
             return res.status(400).json({ error: 'resume_text is required' });
@@ -15,17 +20,39 @@ async function generateInterviewQuestionsController(req, res) {
             return res.status(400).json({ error: 'role is required' });
         }
 
-        const questions = await generateInterviewQuestions(resume_text, role, Math.min(count, 10));
+        // Fetch role's categorized skills from dataset for grounded questions
+        let categorizedSkills = null;
+        try {
+            categorizedSkills = await getRequiredSkillsCategorized(role);
+        } catch (e) {
+            console.warn('[Interview] Could not fetch categorized skills:', e.message);
+        }
+
+        const questions = await generateInterviewQuestions(
+            resume_text, role, Math.min(count, 10), user_name, categorizedSkills
+        );
 
         if (!questions || questions.length === 0) {
             return res.status(422).json({ error: 'Could not generate interview questions. Please try again.' });
         }
 
+        // Store model_answer_points server-side (keyed by uid or session hash)
+        const uid = req.headers['x-user-uid'] || req.user?.uid || 'anonymous';
+        const storeKey = `${uid}:${role}`;
+        const questionsWithModelAnswers = questions.map(q => ({
+            ...q,
+            model_answer_points: q.model_answer_points || []
+        }));
+        modelAnswerStore.set(storeKey, questionsWithModelAnswers);
+
+        // Strip model_answer_points from the frontend response (prevent cheating)
+        const questionsForClient = questions.map(({ model_answer_points, ...rest }) => rest);
+
         res.json({
             success: true,
             role,
-            question_count: questions.length,
-            questions
+            question_count: questionsForClient.length,
+            questions: questionsForClient
         });
     } catch (err) {
         console.error('Interview generate error:', err.message);
@@ -39,7 +66,7 @@ async function generateInterviewQuestionsController(req, res) {
  */
 async function evaluateInterviewAnswerController(req, res) {
     try {
-        const { question, answer, role, category } = req.body;
+        const { question, answer, role, category, user_name } = req.body;
 
         if (!question || !role) {
             return res.status(400).json({ error: 'question and role are required' });
@@ -49,7 +76,8 @@ async function evaluateInterviewAnswerController(req, res) {
             question,
             answer || '',
             role,
-            category || 'General'
+            category || 'General',
+            user_name
         );
 
         res.json({
@@ -62,4 +90,5 @@ async function evaluateInterviewAnswerController(req, res) {
     }
 }
 
-module.exports = { generateInterviewQuestionsController, evaluateInterviewAnswerController };
+module.exports = { generateInterviewQuestionsController, evaluateInterviewAnswerController, modelAnswerStore };
+

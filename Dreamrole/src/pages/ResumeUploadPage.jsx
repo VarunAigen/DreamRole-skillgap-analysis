@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { authFetch } from '../lib/api'
 import { useNavigate } from 'react-router-dom'
 import UploadBox from '../components/UploadBox'
 import SkillList from '../components/SkillList'
@@ -23,13 +24,13 @@ export default function ResumeUploadPage() {
       // Step 1: Upload resume
       const formData = new FormData()
       formData.append('resume', file)
-      const uploadRes = await fetch('/api/resume/upload', { method: 'POST', body: formData })
+      const uploadRes = await authFetch('/api/resume/upload', { method: 'POST', body: formData })
       const uploadData = await uploadRes.json()
       if (!uploadRes.ok) throw new Error(uploadData.error || 'Upload failed')
       setResumeText(uploadData.resume_text)
 
       // Step 2: Extract skills
-      const skillRes = await fetch('/api/skills/extract', {
+      const skillRes = await authFetch('/api/skills/extract', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ resume_text: uploadData.resume_text })
@@ -58,7 +59,7 @@ export default function ResumeUploadPage() {
       />
 
       {error && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">{error}</div>
+        <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-sm text-red-400">{error}</div>
       )}
 
       {file && !analyzed && !loading && (
@@ -70,25 +71,33 @@ export default function ResumeUploadPage() {
       )}
 
       {loading && (
-        <div className="card flex items-center gap-3 text-brand-600">
-          <Loader size={20} className="animate-spin" />
-          <span className="text-sm font-medium">Extracting skills with AI... This may take a moment.</span>
+        <div className="card text-center space-y-4 animate-pulse-slow">
+          <div className="flex justify-center">
+            <div className="relative">
+              <div className="w-16 h-16 border-4 border-indigo-500/25 border-t-brand-600 rounded-full animate-spin"></div>
+              <Cpu size={24} className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-indigo-400" />
+            </div>
+          </div>
+          <div>
+            <h3 className="font-semibold text-white">Processing Document...</h3>
+            <p className="text-sm text-indigo-400 font-medium mt-1 animate-pulse">Running AI extraction model...</p>
+          </div>
         </div>
       )}
 
       {analyzed && (
         <div className="card space-y-4 animate-fade-in">
-          <div className="flex items-center gap-2 text-emerald-600">
+          <div className="flex items-center gap-2 text-emerald-400">
             <div className="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center text-xs font-bold">✓</div>
             <span className="text-sm font-semibold">Resume parsed successfully!</span>
           </div>
 
           <div>
-            <p className="text-xs text-slate-500 font-medium uppercase tracking-wider mb-3">Detected Skills ({extractedSkills.length})</p>
+            <p className="text-xs text-white/40 font-medium uppercase tracking-wider mb-3">Detected Skills ({extractedSkills.length})</p>
             <SkillList skills={extractedSkills} variant="matched" />
           </div>
 
-          <button onClick={() => navigate('/dashboard/role')} className="btn-primary w-full justify-center">
+          <button onClick={() => navigate('/dashboard/workflow')} className="btn-primary w-full justify-center">
             Proceed to Role Selection <ArrowRight size={16} />
           </button>
         </div>

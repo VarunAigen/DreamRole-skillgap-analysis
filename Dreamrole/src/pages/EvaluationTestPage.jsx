@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { authFetch } from '../lib/api'
 import { useNavigate } from 'react-router-dom'
 import TestQuestion from '../components/TestQuestion'
 import { CheckCircle2, ArrowRight, ArrowLeft, Trophy, Loader } from 'lucide-react'
@@ -18,10 +19,10 @@ export default function EvaluationTestPage() {
 
   useEffect(() => {
     const role = selectedRole || 'Software Developer'
-    fetch('/api/test/generate', {
+    authFetch('/api/test/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ role, missing_skills: missingSkills, resume_text: resumeText, count: 5 })
+      body: JSON.stringify({ role, missing_skills: missingSkills, matched_skills: analysisResult?.matched_skills || [], resume_text: resumeText, count: 5 })
     })
       .then(r => r.json())
       .then(data => {
@@ -48,7 +49,7 @@ export default function EvaluationTestPage() {
 
   if (loading) {
     return (
-      <div className="max-w-2xl mx-auto card flex items-center gap-3 text-brand-600">
+      <div className="max-w-2xl mx-auto card flex items-center gap-3 text-indigo-400">
         <Loader size={20} className="animate-spin" />
         <span className="text-sm font-medium">Generating personalized test questions with AI...</span>
       </div>
@@ -59,7 +60,7 @@ export default function EvaluationTestPage() {
     return (
       <div className="max-w-2xl mx-auto space-y-4">
         <h1 className="section-heading">Evaluation Test</h1>
-        <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">{error}</div>
+        <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-sm text-red-400">{error}</div>
       </div>
     )
   }
@@ -78,14 +79,14 @@ export default function EvaluationTestPage() {
           <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center shadow-lg">
             <Trophy size={36} className="text-amber-300" />
           </div>
-          <h1 className="text-2xl font-extrabold text-slate-800">Test Complete!</h1>
+          <h1 className="text-2xl font-extrabold text-white">Test Complete!</h1>
           <div>
-            <p className="text-5xl font-extrabold text-brand-600">{score}<span className="text-2xl text-slate-400">/{questions.length}</span></p>
-            <p className="text-sm text-slate-500 mt-1">Questions Correct</p>
+            <p className="text-5xl font-extrabold text-indigo-400">{score}<span className="text-2xl text-white/30">/{questions.length}</span></p>
+            <p className="text-sm text-white/40 mt-1">Questions Correct</p>
           </div>
-          <div className="p-4 bg-surface-50 rounded-xl border text-left space-y-2">
-            <p className="text-sm font-semibold text-slate-700">Performance Summary</p>
-            <p className="text-sm text-slate-600 flex items-center gap-2"><CheckCircle2 size={15} className="text-brand-500 flex-shrink-0" /> {stageLabel}</p>
+          <div className="p-4 bg-transparent rounded-xl border text-left space-y-2">
+            <p className="text-sm font-semibold text-white/80">Performance Summary</p>
+            <p className="text-sm text-white/60 flex items-center gap-2"><CheckCircle2 size={15} className="text-brand-500 flex-shrink-0" /> {stageLabel}</p>
           </div>
           <div className="flex gap-3">
             <button onClick={() => { setSubmitted(false); setCurrent(0); setAnswers({}) }} className="btn-secondary flex-1 justify-center">Retake Test</button>
@@ -112,7 +113,7 @@ export default function EvaluationTestPage() {
       {/* Progress dots */}
       <div className="flex gap-1.5">
         {questions.map((_, i) => (
-          <div key={i} className={`flex-1 h-1.5 rounded-full transition-all ${i < current ? 'bg-brand-600' : i === current ? 'bg-brand-400' : 'bg-surface-200'}`} />
+          <div key={i} className={`flex-1 h-1.5 rounded-full transition-all ${i < current ? 'bg-brand-600' : i === current ? 'bg-brand-400' : 'bg-white/[0.06]'}`} />
         ))}
       </div>
 

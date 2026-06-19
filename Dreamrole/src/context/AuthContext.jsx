@@ -15,12 +15,28 @@ const AuthContext = createContext(null)
 
 export function AuthProvider({ children }) {
     const [currentUser, setCurrentUser] = useState(null)
+    const [userRole, setUserRole] = useState(null) // 'admin' | 'mentor' | 'student' | null
     const [loading, setLoading] = useState(true)   // true while Firebase checks session
 
     // Listen to auth state changes
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
             setCurrentUser(user)
+            if (user) {
+                // Fetch user role from backend
+                try {
+                    const token = await user.getIdToken()
+                    const res = await fetch('/api/auth/me', {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    })
+                    const data = await res.json()
+                    setUserRole(data.role || 'student')
+                } catch {
+                    setUserRole('student') // Default to student if role fetch fails
+                }
+            } else {
+                setUserRole(null)
+            }
             setLoading(false)
         })
         return unsubscribe
@@ -57,7 +73,11 @@ export function AuthProvider({ children }) {
     // Google sign-in
     const loginWithGoogle = async () => {
         const cred = await signInWithPopup(auth, googleProvider)
-        await createUserProfile(cred.user)
+        try {
+            await createUserProfile(cred.user)
+        } catch (e) {
+            console.warn('Failed to create user profile document during Google Sign-in', e)
+        }
         return cred.user
     }
 
@@ -69,6 +89,7 @@ export function AuthProvider({ children }) {
 
     const value = {
         currentUser,
+        userRole,
         loading,
         signup,
         login,

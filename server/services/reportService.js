@@ -96,10 +96,10 @@ async function generatePDFReport(data) {
     ${projects.slice(0, 4).map(p => `
       <div class="project-item">
         <div class="project-title">${p.title}</div>
-        <div style="font-size:12px;color:#64748b;margin:4px 0;">${p.description?.substring(0, 120) || ''}...</div>
-        ${p.github ? `<a class="project-link" href="${p.github}">${p.github}</a>` : ''}
+        <div style="font-size:12px;color:#64748b;margin:4px 0;">${(p.description || '').substring(0, 120)}${(p.description || '').length > 120 ? '...' : ''}</div>
+        ${p.github && p.github.trim() ? `<a class="project-link" href="${p.github.trim()}" style="color:#4f46e5;text-decoration:underline;font-size:11px;word-break:break-all;display:block;margin-top:4px;">🔗 ${p.github.trim()}</a>` : '<span style="font-size:11px;color:#94a3b8;">No GitHub link available</span>'}
       </div>
-    `).join('') || '<em style="color:#94a3b8">No projects available</em>'}
+    `).join('') || '<em style="color:#94a3b8">No projects available for this role</em>'}
   </div>
 
   <div class="section">
@@ -107,10 +107,10 @@ async function generatePDFReport(data) {
     ${certifications.slice(0, 4).map(c => `
       <div class="project-item">
         <div class="project-title">${c.title}</div>
-        <div style="font-size:12px;color:#64748b;margin:4px 0;">${c.platform}</div>
-        ${c.link ? `<a class="project-link" href="${c.link}">${c.link}</a>` : ''}
+        <div style="font-size:12px;color:#64748b;margin:4px 0;font-weight:600;">${c.platform || ''}</div>
+        ${c.link && c.link.trim() ? `<a class="project-link" href="${c.link.trim()}" style="color:#4f46e5;text-decoration:underline;font-size:11px;word-break:break-all;display:block;margin-top:4px;">🔗 ${c.link.trim()}</a>` : '<span style="font-size:11px;color:#94a3b8;">No link available</span>'}
       </div>
-    `).join('') || '<em style="color:#94a3b8">No certifications available</em>'}
+    `).join('') || '<em style="color:#94a3b8">No certifications available for this role</em>'}
   </div>
 
   <div class="footer">

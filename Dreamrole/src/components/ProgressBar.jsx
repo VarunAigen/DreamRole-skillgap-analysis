@@ -1,29 +1,23 @@
 export default function ProgressBar({ value = 0, label = '', showPercent = true, color = 'brand', height = 'md' }) {
   const colorMap = {
-    brand: 'bg-gradient-to-r from-brand-500 to-brand-600',
-    green: 'bg-gradient-to-r from-emerald-400 to-emerald-600',
-    amber: 'bg-gradient-to-r from-amber-400 to-amber-600',
-    red: 'bg-gradient-to-r from-red-400 to-red-600',
+    brand: 'linear-gradient(90deg, #6366f1, #8b5cf6)',
+    green: 'linear-gradient(90deg, #22c55e, #10b981)',
+    amber: 'linear-gradient(90deg, #f59e0b, #d97706)',
+    red: 'linear-gradient(90deg, #ef4444, #dc2626)',
   }
-  const heightMap = {
-    sm: 'h-2',
-    md: 'h-3',
-    lg: 'h-4',
-  }
+  const heightMap = { sm: '8px', md: '12px', lg: '16px' }
 
   return (
     <div className="w-full">
       {(label || showPercent) && (
         <div className="flex items-center justify-between mb-1.5">
-          {label && <span className="text-sm font-medium text-slate-600">{label}</span>}
-          {showPercent && <span className="text-sm font-bold text-brand-600">{Math.round(value)}%</span>}
+          {label && <span className="text-sm font-medium" style={{ color: 'rgba(255,255,255,0.6)' }}>{label}</span>}
+          {showPercent && <span className="text-sm font-bold" style={{ color: '#a5b4fc' }}>{Math.round(value)}%</span>}
         </div>
       )}
-      <div className={`w-full bg-surface-200 rounded-full ${heightMap[height]} overflow-hidden`}>
-        <div
-          className={`${colorMap[color]} ${heightMap[height]} rounded-full transition-all duration-700 ease-out`}
-          style={{ width: `${Math.min(100, Math.max(0, value))}%` }}
-        />
+      <div className="w-full rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)', height: heightMap[height] }}>
+        <div className="h-full rounded-full transition-all duration-700 ease-out"
+          style={{ width: `${Math.min(100, Math.max(0, value))}%`, background: colorMap[color] || colorMap.brand }} />
       </div>
     </div>
   )

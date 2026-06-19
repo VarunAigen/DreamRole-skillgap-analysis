@@ -27,15 +27,15 @@ export default function MentorPage() {
       </div>
 
       {loading ? (
-        <div className="card flex items-center gap-3 text-brand-600">
+        <div className="card flex items-center gap-3 text-indigo-400">
           <Loader size={20} className="animate-spin" />
           <span className="text-sm font-medium">Finding mentors...</span>
         </div>
       ) : (
         <>
-          <div className="flex items-center gap-2 p-4 bg-brand-50 border border-brand-100 rounded-xl">
-            <Users size={18} className="text-brand-600" />
-            <p className="text-sm text-brand-700 font-medium">
+          <div className="flex items-center gap-2 p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-xl">
+            <Users size={18} className="text-indigo-400" />
+            <p className="text-sm text-indigo-300 font-medium">
               {mentors.length} mentors available · Click "Request Guidance" to connect
             </p>
           </div>

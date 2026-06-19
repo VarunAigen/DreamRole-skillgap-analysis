@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { authFetch } from '../lib/api'
 import ProjectCard from '../components/ProjectCard'
 import CertificationCard from '../components/CertificationCard'
 import { Lightbulb, Award, Loader } from 'lucide-react'
@@ -12,7 +13,7 @@ export default function RoadmapPage() {
 
   useEffect(() => {
     const role = selectedRole || 'Frontend Developer'
-    fetch(`/api/recommendations?role=${encodeURIComponent(role)}`)
+    authFetch(`/api/recommendations?role=${encodeURIComponent(role)}`)
       .then(r => r.json())
       .then(data => {
         if (data.projects) setProjects(data.projects)
@@ -23,7 +24,7 @@ export default function RoadmapPage() {
   }, [selectedRole])
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 animate-fade-in-up">
       <div>
         <h1 className="section-heading">Improvement Roadmap</h1>
         <p className="section-sub">
@@ -32,37 +33,31 @@ export default function RoadmapPage() {
       </div>
 
       {loading ? (
-        <div className="card flex items-center gap-3 text-brand-600">
+        <div className="glass-card flex items-center gap-3" style={{ color: '#818cf8' }}>
           <Loader size={20} className="animate-spin" />
           <span className="text-sm font-medium">Loading personalized recommendations...</span>
         </div>
       ) : (
         <>
-          {/* Projects */}
           <section>
             <div className="flex items-center gap-2 mb-4">
-              <Lightbulb size={18} className="text-brand-600" />
-              <h2 className="text-base font-bold text-slate-800">Recommended Projects</h2>
+              <Lightbulb size={18} style={{ color: '#fbbf24' }} />
+              <h2 className="text-base font-bold text-white/90">Recommended Projects</h2>
               <span className="badge-brand ml-auto">{projects.length} projects</span>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {projects.map((p) => (
-                <ProjectCard key={p.title} {...p} />
-              ))}
+              {projects.map((p) => <ProjectCard key={p.title} {...p} />)}
             </div>
           </section>
 
-          {/* Certifications */}
           <section>
             <div className="flex items-center gap-2 mb-4">
-              <Award size={18} className="text-amber-500" />
-              <h2 className="text-base font-bold text-slate-800">Recommended Certifications</h2>
+              <Award size={18} style={{ color: '#fbbf24' }} />
+              <h2 className="text-base font-bold text-white/90">Recommended Certifications</h2>
               <span className="badge-brand ml-auto">{certifications.length} certs</span>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {certifications.map((c) => (
-                <CertificationCard key={c.title} {...c} />
-              ))}
+              {certifications.map((c) => <CertificationCard key={c.title} {...c} />)}
             </div>
           </section>
         </>

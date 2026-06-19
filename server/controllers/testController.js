@@ -8,8 +8,9 @@ async function generateTestController(req, res) {
             return res.status(400).json({ error: 'role is required' });
         }
 
+        const matched_skills = req.body.matched_skills && Array.isArray(req.body.matched_skills) ? req.body.matched_skills : [];
         const skills = missing_skills && Array.isArray(missing_skills) ? missing_skills : [];
-        const questions = await generateTest(role, skills, resume_text || '', Math.min(count, 10));
+        const questions = await generateTest(role, skills, matched_skills, resume_text || '', Math.min(count, 10));
 
         res.json({
             success: true,

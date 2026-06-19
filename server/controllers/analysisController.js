@@ -1,7 +1,9 @@
 const { fullAnalysis } = require('../services/analysisService');
 const { generateFeedback, generateActionableFeedback } = require('../services/openaiService');
-const { getRequiredSkills, getRoleNames } = require('../services/dataService');
+const { getRequiredSkills, getRequiredSkillsCategorized, getRoleNames } = require('../services/dataService');
 const { saveProgress } = require('../services/dataService');
+const AnalysisResult = require('../models/AnalysisResult');
+const UserProfile = require('../models/UserProfile');
 
 async function analyzeSkillGap(req, res) {
     try {
@@ -16,6 +18,7 @@ async function analyzeSkillGap(req, res) {
 
         // Get required skills from dataset
         let required_skills = await getRequiredSkills(role);
+        let categorized_skills = await getRequiredSkillsCategorized(role);
         let resolvedRole = role;
 
         if (!required_skills) {
@@ -36,10 +39,11 @@ async function analyzeSkillGap(req, res) {
             // Use the matched role's skills
             resolvedRole = match;
             required_skills = await getRequiredSkills(match);
+            categorized_skills = await getRequiredSkillsCategorized(match);
         }
 
         const skillsForRole = required_skills || [];
-        const { matched, missing, alignment_stage } = fullAnalysis(resume_skills, skillsForRole);
+        const { matched, missing, alignment_stage, category_breakdown } = fullAnalysis(resume_skills, skillsForRole, categorized_skills);
 
         // Generate AI feedback
         let feedback = '';
@@ -58,13 +62,56 @@ async function analyzeSkillGap(req, res) {
             resume_improvements = ["Add more specific projects demonstrating missing skills."];
         }
 
-        // Save progress
+        // Save progress (JSON file fallback)
         if (user_id) {
             try {
                 saveProgress({ user_id, role: resolvedRole, alignment_stage, missing_skills: missing, matched_skills: matched });
             } catch (e) {
                 console.warn('Progress save failed:', e.message);
             }
+        }
+
+        // Persist full analysis result to MongoDB (upsert per uid + role)
+        try {
+            const uid = req.headers['x-user-uid'] || user_id || 'anonymous';
+            await AnalysisResult.findOneAndUpdate(
+                { uid, role: resolvedRole },
+                {
+                    uid,
+                    role: resolvedRole,
+                    alignment_stage,
+                    matched_skills: matched,
+                    missing_skills: missing,
+                    total_required: skillsForRole.length,
+                    total_matched: matched.length,
+                    category_breakdown: category_breakdown || {},
+                    feedback,
+                    weak_areas,
+                    resume_improvements
+                },
+                { upsert: true, new: true, setDefaultsOnInsert: true }
+            );
+        } catch (dbErr) {
+            // Non-fatal — app continues even if DB write fails
+            console.warn('AnalysisResult DB save failed:', dbErr.message);
+        }
+
+        // Update UserProfile last_alignment_stage snapshot (non-fatal)
+        try {
+            const uid = req.headers['x-user-uid'] || user_id;
+            if (uid && uid !== 'anonymous') {
+                await UserProfile.findOneAndUpdate(
+                    { uid },
+                    { $set: {
+                        last_alignment_stage: alignment_stage,
+                        last_analysis_role: resolvedRole,
+                        last_analysis_at: new Date()
+                    }},
+                    { upsert: true, new: true, setDefaultsOnInsert: true }
+                );
+            }
+        } catch (profileErr) {
+            console.warn('UserProfile snapshot update failed:', profileErr.message);
         }
 
         res.json({
@@ -74,6 +121,7 @@ async function analyzeSkillGap(req, res) {
             matched_skills: matched,
             missing_skills: missing,
             alignment_stage,
+            category_breakdown,
             feedback,
             weak_areas,
             resume_improvements,

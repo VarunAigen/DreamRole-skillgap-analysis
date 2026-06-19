@@ -6,22 +6,21 @@ export default function ProtectedRoute({ children }) {
     const { currentUser, loading } = useAuth()
     const location = useLocation()
 
-    // Show spinner while Firebase checks session (prevents flash of login page)
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-surface-50">
-                <div className="flex flex-col items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center animate-pulse">
-                        <Loader size={20} className="text-white animate-spin" />
+            <div className="min-h-screen flex items-center justify-center" style={{ background: '#09090b' }}>
+                <div className="flex flex-col items-center gap-4">
+                    <div className="w-12 h-12 rounded-2xl flex items-center justify-center animate-pulse shadow-glow"
+                        style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}>
+                        <Loader size={22} className="text-white animate-spin" />
                     </div>
-                    <p className="text-sm text-slate-500">Loading DreamRole...</p>
+                    <p className="text-sm" style={{ color: 'rgba(255,255,255,0.4)' }}>Loading DreamRole...</p>
                 </div>
             </div>
         )
     }
 
     if (!currentUser) {
-        // Preserve intended destination so user is redirected back after login
         return <Navigate to="/auth" state={{ from: location }} replace />
     }
 

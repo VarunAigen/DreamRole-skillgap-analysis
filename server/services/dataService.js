@@ -79,7 +79,7 @@ async function loadRolesData() {
 
 /**
  * Load and parse the career roles CSV.
- * Returns: { roleName: { domain, core_skills } }
+ * Returns: { roleName: { domain, core_skills, tools_and_technologies, optional_advanced_skills } }
  */
 async function loadCareerRolesData() {
     if (careerRolesCache) return careerRolesCache;
@@ -92,17 +92,24 @@ async function loadCareerRolesData() {
             .on('data', (row) => {
                 const role = row['role']?.trim();
                 const domain = row['domain']?.trim();
-                const core_skills_str = row['core_skills']?.trim();
-
                 if (!role) return;
 
-                let core_skills = [];
-                if (core_skills_str) {
-                    // properly parse quoted CSV strings if they are raw, but csv-parser handles quotes
-                    core_skills = core_skills_str.split(',').map(s => s.trim()).filter(Boolean);
-                }
+                const parseSkills = (str) => {
+                    if (!str) return [];
+                    return str.split(',').map(s => s.trim()).filter(Boolean);
+                };
 
-                roles[role] = { domain, core_skills };
+                roles[role] = { 
+                    domain, 
+                    core_skills: parseSkills(row['core_skills']?.trim()),
+                    programming_languages: parseSkills(row['programming_languages']?.trim()),
+                    frameworks_and_libraries: parseSkills(row['frameworks_and_libraries']?.trim()),
+                    tools_and_technologies: parseSkills(row['tools_and_technologies']?.trim()),
+                    platforms_and_cloud: parseSkills(row['platforms_and_cloud']?.trim()),
+                    methodologies_and_practices: parseSkills(row['methodologies_and_practices']?.trim()),
+                    soft_skills: parseSkills(row['soft_skills']?.trim()),
+                    optional_advanced_skills: parseSkills(row['optional_advanced_skills']?.trim())
+                };
             })
             .on('end', () => {
                 careerRolesCache = roles;
@@ -121,13 +128,40 @@ async function getRoleNames() {
 }
 
 /**
- * Get required skills (core skills) for a specific role.
+ * Get required skills in categorized format for multi-dimensional matching.
  */
-async function getRequiredSkills(role) {
+async function getRequiredSkillsCategorized(role) {
     const data = await loadCareerRolesData();
     const roleData = data[role];
     if (!roleData) return null;
-    return roleData.core_skills;
+    return {
+        core_skills: roleData.core_skills || [],
+        programming_languages: roleData.programming_languages || [],
+        frameworks_and_libraries: roleData.frameworks_and_libraries || [],
+        tools_and_technologies: roleData.tools_and_technologies || [],
+        platforms_and_cloud: roleData.platforms_and_cloud || [],
+        methodologies_and_practices: roleData.methodologies_and_practices || [],
+        soft_skills: roleData.soft_skills || [],
+        optional_advanced_skills: roleData.optional_advanced_skills || []
+    };
+}
+
+/**
+ * Get required skills (flattened) for a specific role (backward compatibility).
+ */
+async function getRequiredSkills(role) {
+    const cat = await getRequiredSkillsCategorized(role);
+    if (!cat) return null;
+    return [
+        ...cat.core_skills,
+        ...cat.programming_languages,
+        ...cat.frameworks_and_libraries,
+        ...cat.tools_and_technologies,
+        ...cat.platforms_and_cloud,
+        ...cat.methodologies_and_practices,
+        ...cat.soft_skills,
+        ...cat.optional_advanced_skills
+    ];
 }
 
 /**
@@ -183,43 +217,62 @@ function getMentors(role) {
     );
 }
 
+const Progress = require('../models/Progress');
+
 /**
  * Get all progress records or filter by user_id.
  */
-function getProgress(userId) {
+async function getProgress(userId) {
     try {
-        const data = JSON.parse(fs.readFileSync(PROGRESS_PATH, 'utf-8'));
-        if (userId) return data.filter(p => p.user_id === userId);
-        return data;
-    } catch {
-        return [];
+        const query = userId ? { user_id: userId } : {};
+        const records = await Progress.find(query).sort({ date: -1 }).lean();
+        
+        // Ensure format matches old API expectations
+        return records.map(record => ({
+            id: record._id.toString(),
+            user_id: record.user_id,
+            role: record.role,
+            alignment_stage: record.alignment_stage,
+            missing_skills: record.missing_skills || [],
+            matched_skills: record.matched_skills || [],
+            date: record.date
+        }));
+    } catch (err) {
+        console.error("DB GetProgress Error:", err);
+        throw err;
     }
 }
 
 /**
  * Save a new progress entry.
  */
-function saveProgress(entry) {
-    let data = [];
+async function saveProgress(entry) {
     try {
-        data = JSON.parse(fs.readFileSync(PROGRESS_PATH, 'utf-8'));
-    } catch {
-        data = [];
+        const newProgress = new Progress({
+            user_id: entry.user_id || 'anonymous',
+            role: entry.role,
+            alignment_stage: entry.alignment_stage,
+            missing_skills: entry.missing_skills || [],
+            matched_skills: entry.matched_skills || [],
+            evaluation_status: entry.evaluation_status || 'pending'
+        });
+
+        const saved = await newProgress.save();
+        
+        return {
+            id: saved._id.toString(),
+            user_id: saved.user_id,
+            role: saved.role,
+            alignment_stage: saved.alignment_stage,
+            missing_skills: saved.missing_skills,
+            matched_skills: saved.matched_skills,
+            evaluation_status: saved.evaluation_status,
+            date: saved.date
+        };
+    } catch (err) {
+        console.error("[saveProgress] Non-fatal DB write error:", err.message);
+        return null; // non-fatal — main analysis response is unaffected
     }
-
-    const newEntry = {
-        id: uuidv4(),
-        user_id: entry.user_id || 'anonymous',
-        role: entry.role,
-        alignment_stage: entry.alignment_stage,
-        missing_skills: entry.missing_skills || [],
-        matched_skills: entry.matched_skills || [],
-        date: new Date().toISOString()
-    };
-
-    data.push(newEntry);
-    fs.writeFileSync(PROGRESS_PATH, JSON.stringify(data, null, 2));
-    return newEntry;
 }
 
 module.exports = {
@@ -228,6 +281,7 @@ module.exports = {
     getRoleNames,
     getDomainsAndRoles,
     getRequiredSkills,
+    getRequiredSkillsCategorized,
     getProjects,
     getCertifications,
     getMentors,

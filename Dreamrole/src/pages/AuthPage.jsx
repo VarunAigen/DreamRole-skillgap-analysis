@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { Eye, EyeOff, Sparkles, ArrowRight, Mail, Lock, User, AlertCircle } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
+import { useApp } from '../context/AppContext'
 
 // Google "G" SVG icon
 function GoogleIcon() {
@@ -26,10 +27,11 @@ export default function AuthPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const { signup, login, loginWithGoogle, resetPassword } = useAuth()
+  const { clearSession } = useApp()
 
-  // Redirect to the page the user was trying to reach, or dashboard
+  useEffect(() => { clearSession() }, [])
+
   const from = location.state?.from?.pathname || '/dashboard'
-
   const clearError = () => setError('')
 
   const handleSubmit = async (e) => {
@@ -78,83 +80,103 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="min-h-screen flex">
-      {/* Left panel */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-brand-900 via-brand-800 to-slate-900 flex-col justify-between p-12 relative overflow-hidden">
-        <div className="absolute inset-0 opacity-20">
-          <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-brand-400 rounded-full blur-3xl" />
-          <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-purple-600 rounded-full blur-3xl" />
+    <div className="min-h-screen flex" style={{ background: '#09090b' }}>
+      {/* Left panel — dark branding */}
+      <div className="hidden lg:flex lg:w-1/2 flex-col justify-between p-12 relative overflow-hidden">
+        {/* Background orbs */}
+        <div className="absolute inset-0">
+          <div className="absolute top-1/4 left-1/4 w-72 h-72 rounded-full blur-[120px] animate-float"
+            style={{ background: 'rgba(99,102,241,0.15)' }} />
+          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 rounded-full blur-[140px] animate-float"
+            style={{ background: 'rgba(139,92,246,0.1)', animationDelay: '3s' }} />
         </div>
+
+        {/* Grid pattern */}
+        <div className="absolute inset-0 opacity-[0.02]"
+          style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)', backgroundSize: '50px 50px' }} />
+
         <div className="relative">
-          <div className="flex items-center gap-2 mb-16">
-            <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center">
-              <Sparkles size={18} className="text-white" />
+          <div className="flex items-center gap-2.5 mb-16">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center shadow-glow"
+              style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}>
+              <Sparkles size={16} className="text-white" />
             </div>
-            <span className="text-white font-bold text-xl">Dream<span className="text-brand-300">Role</span></span>
+            <span className="text-white font-bold text-xl">Dream<span className="text-gradient">Role</span></span>
           </div>
-          <h2 className="text-4xl font-extrabold text-white leading-tight mb-4">
+          <h2 className="text-4xl font-extrabold text-white leading-tight mb-5 tracking-tight">
             Your career<br />journey starts here.
           </h2>
-          <p className="text-brand-200 text-lg leading-relaxed max-w-xs">
+          <p className="text-lg leading-relaxed max-w-sm" style={{ color: 'rgba(255,255,255,0.45)' }}>
             Analyze your gaps, build skills, get mentored, and land the role you've always wanted.
           </p>
         </div>
         <div className="relative space-y-4">
-          {['Skill gap analysis powered by AI', 'Personalized improvement roadmap', 'Chat with 50+ industry mentors'].map((item) => (
+          {['Skill gap analysis powered by AI', 'Personalized improvement roadmap', 'AI mock interviews with emotion tracking'].map((item) => (
             <div key={item} className="flex items-center gap-3">
-              <div className="w-5 h-5 rounded-full bg-brand-400/30 border border-brand-400/50 flex items-center justify-center flex-shrink-0">
-                <div className="w-2 h-2 rounded-full bg-brand-300" />
+              <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
+                style={{ background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)' }}>
+                <div className="w-2 h-2 rounded-full" style={{ background: '#818cf8' }} />
               </div>
-              <span className="text-brand-100 text-sm font-medium">{item}</span>
+              <span className="text-sm font-medium" style={{ color: 'rgba(255,255,255,0.6)' }}>{item}</span>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Right panel */}
-      <div className="flex-1 flex flex-col items-center justify-center bg-surface-50 px-6 py-12">
-        <div className="w-full max-w-md">
+      {/* Right panel — form */}
+      <div className="flex-1 flex flex-col items-center justify-center px-6 py-12">
+        <div className="w-full max-w-md animate-fade-in-up">
           {/* Mobile logo */}
-          <div className="lg:hidden flex items-center gap-2 mb-8 justify-center">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center">
-              <Sparkles size={15} className="text-white" />
+          <div className="lg:hidden flex items-center gap-2.5 mb-8 justify-center">
+            <div className="w-8 h-8 rounded-xl flex items-center justify-center"
+              style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}>
+              <Sparkles size={14} className="text-white" />
             </div>
-            <span className="text-slate-800 font-bold text-xl">Dream<span className="text-brand-600">Role</span></span>
+            <span className="text-white font-bold text-xl">Dream<span className="text-gradient">Role</span></span>
           </div>
 
-          <div className="card">
+          <div className="glass-card">
             {/* Mode toggle */}
-            <div className="flex bg-surface-100 rounded-xl p-1 mb-8 gap-1">
+            <div className="flex rounded-xl p-1 mb-8 gap-1" style={{ background: 'rgba(255,255,255,0.04)' }}>
               {['login', 'signup'].map((m) => (
                 <button
                   key={m}
                   onClick={() => { setMode(m); clearError(); setResetSent(false) }}
-                  className={`flex-1 py-2 rounded-lg text-sm font-semibold capitalize transition-all duration-200
-                    ${mode === m ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                  className="flex-1 py-2.5 rounded-lg text-sm font-semibold capitalize transition-all duration-200"
+                  style={mode === m ? {
+                    background: 'linear-gradient(135deg, rgba(99,102,241,0.2), rgba(139,92,246,0.15))',
+                    color: '#a5b4fc',
+                    border: '1px solid rgba(99,102,241,0.2)',
+                  } : {
+                    color: 'rgba(255,255,255,0.35)',
+                    border: '1px solid transparent',
+                  }}
                 >
                   {m === 'login' ? 'Login' : 'Sign Up'}
                 </button>
               ))}
             </div>
 
-            <h2 className="text-2xl font-bold text-slate-800 mb-1">
+            <h2 className="text-2xl font-bold text-white mb-1">
               {mode === 'login' ? 'Welcome back' : 'Create your account'}
             </h2>
-            <p className="text-sm text-slate-500 mb-7">
+            <p className="text-sm mb-7" style={{ color: 'rgba(255,255,255,0.4)' }}>
               {mode === 'login' ? 'Login to your DreamRole dashboard.' : 'Start your skill journey today.'}
             </p>
 
-            {/* Error banner */}
+            {/* Error */}
             {error && (
-              <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-xl mb-4 text-sm text-red-600">
+              <div className="flex items-start gap-2 p-3 rounded-xl mb-4 text-sm"
+                style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: '#f87171' }}>
                 <AlertCircle size={16} className="flex-shrink-0 mt-0.5" />
                 <span>{error}</span>
               </div>
             )}
 
-            {/* Password reset success */}
+            {/* Reset sent */}
             {resetSent && (
-              <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl mb-4 text-sm text-emerald-700">
+              <div className="p-3 rounded-xl mb-4 text-sm"
+                style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)', color: '#4ade80' }}>
                 ✓ Password reset email sent! Check your inbox.
               </div>
             )}
@@ -162,89 +184,69 @@ export default function AuthPage() {
             <form onSubmit={handleSubmit} className="space-y-4">
               {mode === 'signup' && (
                 <div className="relative">
-                  <User size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                  <input
-                    type="text"
-                    placeholder="Full Name"
-                    required
-                    className="input-field pl-10"
-                    value={form.name}
-                    onChange={e => setForm({ ...form, name: e.target.value })}
-                  />
+                  <User size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: 'rgba(255,255,255,0.25)' }} />
+                  <input type="text" placeholder="Full Name" required className="input-field pl-10"
+                    value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
                 </div>
               )}
               <div className="relative">
-                <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input
-                  type="email"
-                  placeholder="Email Address"
-                  required
-                  className="input-field pl-10"
-                  value={form.email}
-                  onChange={e => setForm({ ...form, email: e.target.value })}
-                />
+                <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: 'rgba(255,255,255,0.25)' }} />
+                <input type="email" placeholder="Email Address" required className="input-field pl-10"
+                  value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} />
               </div>
               <div className="relative">
-                <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input
-                  type={showPass ? 'text' : 'password'}
-                  placeholder="Password"
-                  required
-                  minLength={6}
+                <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: 'rgba(255,255,255,0.25)' }} />
+                <input type={showPass ? 'text' : 'password'} placeholder="Password" required minLength={6}
                   className="input-field pl-10 pr-10"
-                  value={form.password}
-                  onChange={e => setForm({ ...form, password: e.target.value })}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPass(!showPass)}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                >
+                  value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} />
+                <button type="button" onClick={() => setShowPass(!showPass)}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2"
+                  style={{ color: 'rgba(255,255,255,0.3)' }}>
                   {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
 
               {mode === 'login' && (
                 <div className="text-right">
-                  <button type="button" onClick={handleForgotPassword} className="text-xs text-brand-600 hover:underline font-medium">
+                  <button type="button" onClick={handleForgotPassword}
+                    className="text-xs font-medium hover:underline" style={{ color: '#818cf8' }}>
                     Forgot password?
                   </button>
                 </div>
               )}
 
-              <button
-                type="submit"
-                disabled={loading}
-                className={`btn-primary w-full justify-center py-3 text-base mt-2 ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
-              >
+              <button type="submit" disabled={loading}
+                className={`btn-primary w-full justify-center py-3 text-base mt-2 ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}>
                 {loading ? 'Please wait...' : (mode === 'login' ? 'Login' : 'Create Account')}
                 {!loading && <ArrowRight size={17} />}
               </button>
             </form>
 
             {/* Divider */}
-            <div className="flex items-center gap-3 my-5">
-              <div className="flex-1 h-px bg-surface-200" />
-              <span className="text-xs text-slate-400 font-medium">or continue with</span>
-              <div className="flex-1 h-px bg-surface-200" />
+            <div className="flex items-center gap-3 my-6">
+              <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
+              <span className="text-xs font-medium" style={{ color: 'rgba(255,255,255,0.25)' }}>or continue with</span>
+              <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
             </div>
 
-            {/* Google Sign-In */}
-            <button
-              onClick={handleGoogle}
-              disabled={loading}
-              className="w-full flex items-center justify-center gap-2.5 py-2.5 px-4 border border-surface-200 rounded-xl bg-white hover:bg-surface-50 transition-all text-sm font-medium text-slate-700 shadow-sm hover:shadow"
-            >
+            {/* Google */}
+            <button onClick={handleGoogle} disabled={loading}
+              className="w-full flex items-center justify-center gap-2.5 py-2.5 px-4 rounded-xl transition-all text-sm font-medium"
+              style={{
+                background: 'rgba(255,255,255,0.04)',
+                border: '1px solid rgba(255,255,255,0.08)',
+                color: 'rgba(255,255,255,0.7)',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)' }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)' }}>
               <GoogleIcon />
               Continue with Google
             </button>
 
-            <p className="text-center text-sm text-slate-500 mt-6">
+            <p className="text-center text-sm mt-6" style={{ color: 'rgba(255,255,255,0.4)' }}>
               {mode === 'login' ? "Don't have an account?" : 'Already have an account?'}{' '}
-              <button
-                onClick={() => { setMode(mode === 'login' ? 'signup' : 'login'); clearError() }}
-                className="text-brand-600 font-semibold hover:underline"
-              >
+              <button onClick={() => { setMode(mode === 'login' ? 'signup' : 'login'); clearError() }}
+                className="font-semibold hover:underline" style={{ color: '#818cf8' }}>
                 {mode === 'login' ? 'Sign Up' : 'Login'}
               </button>
             </p>
@@ -255,7 +257,6 @@ export default function AuthPage() {
   )
 }
 
-// Friendly Firebase error messages
 function getFirebaseError(code) {
   const map = {
     'auth/user-not-found': 'No account found with this email.',

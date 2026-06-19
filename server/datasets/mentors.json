@@ -1,114 +1,226 @@
 [
     {
-        "name": "Priya Sharma",
+        "name": "Karthik S.",
         "domain": "Frontend Development",
         "company": "Google",
         "experience": "6 years",
         "linkedin": "https://linkedin.com/in/priya-sharma"
     },
     {
-        "name": "Arjun Mehta",
+        "name": "Frontend AI Bot",
+        "domain": "Frontend Development",
+        "company": "DreamRole AI",
+        "experience": "N/A",
+        "linkedin": "https://dreamrole.ai/bot"
+    },
+    {
+        "name": "Srinivasan R.",
         "domain": "Full Stack Development",
         "company": "Flipkart",
         "experience": "7 years",
         "linkedin": "https://linkedin.com/in/arjun-mehta"
     },
     {
-        "name": "Anjali Rao",
+        "name": "Full Stack AI Bot",
+        "domain": "Full Stack Development",
+        "company": "DreamRole AI",
+        "experience": "N/A",
+        "linkedin": "https://dreamrole.ai/bot"
+    },
+    {
+        "name": "Lakshmi N.",
         "domain": "Data Science",
         "company": "Amazon",
         "experience": "5 years",
         "linkedin": "https://linkedin.com/in/anjali-rao"
     },
     {
-        "name": "Rahul Verma",
+        "name": "Data Science AI Bot",
+        "domain": "Data Science",
+        "company": "DreamRole AI",
+        "experience": "N/A",
+        "linkedin": "https://dreamrole.ai/bot"
+    },
+    {
+        "name": "Arun M.",
         "domain": "DevOps Engineering",
         "company": "Microsoft",
         "experience": "8 years",
         "linkedin": "https://linkedin.com/in/rahul-verma"
     },
     {
-        "name": "Sneha Pillai",
+        "name": "DevOps AI Bot",
+        "domain": "DevOps Engineering",
+        "company": "DreamRole AI",
+        "experience": "N/A",
+        "linkedin": "https://dreamrole.ai/bot"
+    },
+    {
+        "name": "Aishwarya R.",
         "domain": "UI/UX Design",
         "company": "Zomato",
         "experience": "4 years",
         "linkedin": "https://linkedin.com/in/sneha-pillai"
     },
     {
-        "name": "Kiran Kumar",
+        "name": "UI/UX AI Bot",
+        "domain": "UI/UX Design",
+        "company": "DreamRole AI",
+        "experience": "N/A",
+        "linkedin": "https://dreamrole.ai/bot"
+    },
+    {
+        "name": "Ganesan K.",
         "domain": "Machine Learning Engineering",
         "company": "NVIDIA",
         "experience": "5 years",
         "linkedin": "https://linkedin.com/in/kiran-kumar"
     },
     {
-        "name": "Deepika Nair",
+        "name": "ML AI Bot",
+        "domain": "Machine Learning Engineering",
+        "company": "DreamRole AI",
+        "experience": "N/A",
+        "linkedin": "https://dreamrole.ai/bot"
+    },
+    {
+        "name": "Nandhini N.",
         "domain": "Backend Development",
         "company": "Razorpay",
         "experience": "6 years",
         "linkedin": "https://linkedin.com/in/deepika-nair"
     },
     {
-        "name": "Vikram Singh",
+        "name": "Backend AI Bot",
+        "domain": "Backend Development",
+        "company": "DreamRole AI",
+        "experience": "N/A",
+        "linkedin": "https://dreamrole.ai/bot"
+    },
+    {
+        "name": "Vignesh R.",
         "domain": "Mobile App Development",
         "company": "Swiggy",
         "experience": "4 years",
         "linkedin": "https://linkedin.com/in/vikram-singh"
     },
     {
-        "name": "Rohan Das",
+        "name": "Mobile AI Bot",
+        "domain": "Mobile App Development",
+        "company": "DreamRole AI",
+        "experience": "N/A",
+        "linkedin": "https://dreamrole.ai/bot"
+    },
+    {
+        "name": "Murali K.",
         "domain": "Cloud Engineering",
         "company": "Infosys",
         "experience": "9 years",
         "linkedin": "https://linkedin.com/in/rohan-das"
     },
     {
-        "name": "Meera Krishnan",
+        "name": "Cloud AI Bot",
+        "domain": "Cloud Engineering",
+        "company": "DreamRole AI",
+        "experience": "Infinite",
+        "linkedin": "https://dreamrole.ai/bot"
+    },
+    {
+        "name": "Meena S.",
         "domain": "Data Engineering",
         "company": "Airtel",
         "experience": "5 years",
         "linkedin": "https://linkedin.com/in/meera-krishnan"
     },
     {
-        "name": "Aditya Patel",
+        "name": "Data Eng AI Bot",
+        "domain": "Data Engineering",
+        "company": "DreamRole AI",
+        "experience": "Infinite",
+        "linkedin": "https://dreamrole.ai/bot"
+    },
+    {
+        "name": "Siva P.",
         "domain": "AI Engineering",
         "company": "Jio AI Labs",
         "experience": "3 years",
         "linkedin": "https://linkedin.com/in/aditya-patel"
     },
     {
-        "name": "Sonia Gupta",
+        "name": "AI Eng AI Bot",
+        "domain": "AI Engineering",
+        "company": "DreamRole AI",
+        "experience": "Infinite",
+        "linkedin": "https://dreamrole.ai/bot"
+    },
+    {
+        "name": "Kavitha M.",
         "domain": "Cybersecurity Analysis",
         "company": "Wipro",
         "experience": "7 years",
         "linkedin": "https://linkedin.com/in/sonia-gupta"
     },
     {
-        "name": "Tejas Kulkarni",
+        "name": "Cybersecurity AI Bot",
+        "domain": "Cybersecurity Analysis",
+        "company": "DreamRole AI",
+        "experience": "Infinite",
+        "linkedin": "https://dreamrole.ai/bot"
+    },
+    {
+        "name": "Anand R.",
         "domain": "Blockchain Development",
         "company": "Polygon",
         "experience": "4 years",
         "linkedin": "https://linkedin.com/in/tejas-kulkarni"
     },
     {
-        "name": "Nisha Reddy",
+        "name": "Blockchain AI Bot",
+        "domain": "Blockchain Development",
+        "company": "DreamRole AI",
+        "experience": "Infinite",
+        "linkedin": "https://dreamrole.ai/bot"
+    },
+    {
+        "name": "Pavithra S.",
         "domain": "QA Engineering",
         "company": "Freshworks",
         "experience": "5 years",
         "linkedin": "https://linkedin.com/in/nisha-reddy"
     },
     {
-        "name": "Harish Iyer",
+        "name": "QA AI Bot",
+        "domain": "QA Engineering",
+        "company": "DreamRole AI",
+        "experience": "Infinite",
+        "linkedin": "https://dreamrole.ai/bot"
+    },
+    {
+        "name": "Balaji R.",
         "domain": "Database Engineering",
         "company": "Oracle India",
         "experience": "10 years",
         "linkedin": "https://linkedin.com/in/harish-iyer"
     },
     {
-        "name": "Divya Menon",
+        "name": "Database AI Bot",
+        "domain": "Database Engineering",
+        "company": "DreamRole AI",
+        "experience": "Infinite",
+        "linkedin": "https://dreamrole.ai/bot"
+    },
+    {
+        "name": "Kani P.",
         "domain": "NLP Engineering",
         "company": "Sarvam AI",
         "experience": "4 years",
         "linkedin": "https://linkedin.com/in/divya-menon"
+    },
+    {
+        "name": "NLP AI Bot",
+        "domain": "NLP Engineering",
+        "company": "DreamRole AI",
+        "experience": "Infinite",
+        "linkedin": "https://dreamrole.ai/bot"
     }
 ]

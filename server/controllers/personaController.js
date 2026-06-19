@@ -1,5 +1,5 @@
 const { getPersonas, getPersonaById, getCategories, compareSkills } = require('../services/personaService');
-const { generateCareerRoadmap, mentorChat } = require('../services/openaiService');
+const { generateCareerRoadmap, chatWithMentor } = require('../services/openaiService');
 
 /**
  * GET /api/personas
@@ -95,7 +95,7 @@ async function checkSkillGap(req, res) {
  * POST /api/personas/:id/chat
  * Chat with the mentor persona using OpenAI + persona system prompt.
  */
-async function chatWithMentor(req, res) {
+async function chatWithMentorController(req, res) {
     try {
         const persona = await getPersonaById(req.params.id);
         if (!persona) return res.status(404).json({ error: 'Mentor not found' });
@@ -105,7 +105,7 @@ async function chatWithMentor(req, res) {
             return res.status(400).json({ error: 'messages or student_goal required' });
         }
 
-        const reply = await mentorChat(persona, messages, student_goal);
+        const reply = await chatWithMentor(persona, messages, student_goal);
         res.json({ success: true, reply, mentor: persona.name });
     } catch (err) {
         console.error('Mentor chat error:', err.message);
@@ -113,4 +113,4 @@ async function chatWithMentor(req, res) {
     }
 }
 
-module.exports = { listPersonas, listCategories, getPersona, generateRoadmap, checkSkillGap, chatWithMentor };
+module.exports = { listPersonas, listCategories, getPersona, generateRoadmap, checkSkillGap, chatWithMentor: chatWithMentorController };

@@ -12,7 +12,7 @@ export default function SkillExtractionPage() {
       <div className="max-w-2xl mx-auto space-y-6">
         <h1 className="section-heading">Skill Extraction</h1>
         <div className="card text-center space-y-3">
-          <p className="text-slate-600">No skills extracted yet. Please upload your resume first.</p>
+          <p className="text-white/60">No skills extracted yet. Please upload your resume first.</p>
           <button onClick={() => navigate('/dashboard/resume')} className="btn-primary mx-auto">Go to Resume Upload</button>
         </div>
       </div>
@@ -27,20 +27,22 @@ export default function SkillExtractionPage() {
       </div>
 
       <div className="card space-y-5">
-        <div className="flex items-center gap-3 p-3 bg-brand-50 border border-brand-100 rounded-xl">
-          <Cpu size={18} className="text-brand-600" />
+        <div className="flex items-center gap-3 p-3 bg-indigo-500/10 border border-indigo-500/20 rounded-xl">
+          <Cpu size={18} className="text-indigo-400" />
           <div>
-            <p className="text-sm font-semibold text-brand-700">Analysis complete</p>
+            <p className="text-sm font-semibold text-indigo-300">Analysis complete</p>
             <p className="text-xs text-brand-500">We found {extractedSkills.length} skills in your resume</p>
           </div>
         </div>
 
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">Detected Skills from Resume</p>
-          <SkillList skills={extractedSkills} variant="default" />
+        <div className="animate-fade-in-up" style={{animationDelay: '100ms'}}>
+          <p className="text-xs font-semibold uppercase tracking-wider text-white/40 mb-3">Detected Skills from Resume</p>
+          <div className="hover:scale-[1.01] transition-transform duration-300">
+            <SkillList skills={extractedSkills} variant="default" />
+          </div>
         </div>
 
-        <div className="p-4 bg-amber-50 border border-amber-100 rounded-xl flex items-start gap-3">
+        <div className="p-4 bg-amber-500/10 border border-amber-100 rounded-xl flex items-start gap-3">
           <Lightbulb size={17} className="text-amber-500 mt-0.5 flex-shrink-0" />
           <p className="text-xs text-amber-700 leading-relaxed">
             <strong>Tip:</strong> The more detailed your resume, the more accurate your skill extraction will be. Consider listing specific frameworks, tools, and technologies you've used.

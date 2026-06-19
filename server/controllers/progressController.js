@@ -1,17 +1,19 @@
 const { getProgress, saveProgress } = require('../services/dataService');
 
-function getProgressController(req, res) {
+async function getProgressController(req, res) {
     try {
-        const { user_id } = req.query;
-        const records = getProgress(user_id || null);
-
-        // Filter out the placeholder entry
-        const realRecords = records.filter(r => r.user_id && r.user_id !== null);
+        // Firebase auth sets req.user.uid; fallback to req.user.id for backward compat
+        const user_id = req.user.uid || req.user.id;
+        if (!user_id) {
+            return res.json({ success: true, count: 0, progress: [] });
+        }
+        
+        const records = await getProgress(user_id);
 
         res.json({
             success: true,
-            count: realRecords.length,
-            progress: realRecords
+            count: records.length,
+            progress: records
         });
     } catch (err) {
         console.error('Progress fetch error:', err.message);
@@ -19,15 +21,19 @@ function getProgressController(req, res) {
     }
 }
 
-function saveProgressController(req, res) {
+async function saveProgressController(req, res) {
     try {
-        const { user_id, role, alignment_stage, missing_skills, matched_skills } = req.body;
+        const { role, alignment_stage, missing_skills, matched_skills, evaluation_status } = req.body;
+        // Firebase auth sets req.user.uid
+        const user_id = req.user.uid || req.user.id;
 
         if (!user_id || !role || !alignment_stage) {
             return res.status(400).json({ error: 'user_id, role, and alignment_stage are required' });
         }
 
-        const saved = saveProgress({ user_id, role, alignment_stage, missing_skills, matched_skills });
+        const saved = await saveProgress({ 
+            user_id, role, alignment_stage, missing_skills, matched_skills, evaluation_status 
+        });
 
         res.json({
             success: true,
