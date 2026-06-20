@@ -31,7 +31,7 @@ const PORT = process.env.PORT || 5000;
 app.use(cors({
     origin: process.env.CORS_ORIGINS
         ? process.env.CORS_ORIGINS.split(',').map(s => s.trim())
-        : ['http://localhost:5173', 'http://localhost:3000'],
+        : ['http://localhost:5173', 'http://localhost:3000', 'https://dreamrole-app-platform.netlify.app'],
     credentials: true
 }));
 app.use(express.json({ limit: '10mb' }));
