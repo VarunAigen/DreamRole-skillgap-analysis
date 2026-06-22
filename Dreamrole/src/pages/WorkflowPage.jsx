@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { authFetch } from '../lib/api'
 import { useNavigate } from 'react-router-dom'
-import { UploadCloud, Target, Cpu, Target as TargetIcon, ArrowRight, ArrowLeft, ChevronDown, CheckCircle2, AlertCircle, Loader, Trophy, MessageSquare, Lightbulb } from 'lucide-react'
+import { UploadCloud, Target, Cpu, Target as TargetIcon, ArrowRight, ArrowLeft, ChevronDown, CheckCircle2, AlertCircle, Loader, Trophy, MessageSquare, Lightbulb, X } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 import { useAuth } from '../context/AuthContext'
 import UploadBox from '../components/UploadBox'

@@ -16,7 +16,15 @@ router.get('/my-students', requireMentor, async (req, res) => {
         const link = await MentorLink.findOne({ mentorUid: req.user.uid }).lean();
         if (!link) return res.json({ success: true, students: [] });
 
-        const activeStudents = link.students.filter(s => s.isActive);
+        // Deduplicate active students by uid
+        const activeStudents = [];
+        const seenUids = new Set();
+        for (const s of link.students) {
+            if (s.isActive && !seenUids.has(s.uid)) {
+                seenUids.add(s.uid);
+                activeStudents.push(s);
+            }
+        }
 
         // Get last session + overall stage per student
         const sessionData = await InterviewSession.aggregate([
@@ -62,26 +70,32 @@ router.post('/link-student', requireMentor, async (req, res) => {
             return res.status(404).json({ error: `No user found with email: ${studentEmail}` });
         }
 
-        // Upsert MentorLink document
-        const link = await MentorLink.findOneAndUpdate(
-            { mentorUid: req.user.uid },
-            {
-                $setOnInsert: {
-                    mentorEmail: req.user.email,
-                    mentorName: req.user.name
-                },
-                $addToSet: {
-                    students: {
-                        uid: studentUser.uid,
-                        email: studentUser.email,
-                        name: studentUser.displayName || studentUser.email,
-                        linkedAt: new Date(),
-                        isActive: true
-                    }
-                }
-            },
-            { upsert: true, new: true }
-        );
+        let link = await MentorLink.findOne({ mentorUid: req.user.uid });
+        if (!link) {
+            link = new MentorLink({
+                mentorUid: req.user.uid,
+                mentorEmail: req.user.email,
+                mentorName: req.user.name || ''
+            });
+        }
+
+        // Add or update the student in the array uniquely
+        const existingIndex = link.students.findIndex(s => s.uid === studentUser.uid);
+        if (existingIndex > -1) {
+            link.students[existingIndex].isActive = true;
+            link.students[existingIndex].email = studentUser.email;
+            link.students[existingIndex].name = studentUser.displayName || studentUser.email;
+        } else {
+            link.students.push({
+                uid: studentUser.uid,
+                email: studentUser.email,
+                name: studentUser.displayName || studentUser.email,
+                linkedAt: new Date(),
+                isActive: true
+            });
+        }
+
+        await link.save();
 
         // Update all student's existing sessions with mentorId
         await InterviewSession.updateMany(

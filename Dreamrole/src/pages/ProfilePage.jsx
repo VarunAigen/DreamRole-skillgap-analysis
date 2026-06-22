@@ -32,6 +32,8 @@ export default function ProfilePage() {
     const [saving, setSaving] = useState(false)
     const [message, setMessage] = useState('')
     const [err, setErr] = useState('')
+    const [isEditing, setIsEditing] = useState(false)
+    const [reloadKey, setReloadKey] = useState(0)
 
     // ── Student-specific background state ──────────────────────────────────────
     const [roleInput, setRoleInput] = useState(selectedRole || '')
@@ -96,7 +98,7 @@ export default function ProfilePage() {
             }
         }
         if (userRole) loadProfileData()
-    }, [userRole])
+    }, [userRole, reloadKey])
 
     // ── Student: Save Preference & Background ─────────────────────────────────
     const handleSaveStudentProfile = async (e) => {
@@ -292,24 +294,86 @@ export default function ProfilePage() {
                             </p>
                         </div>
                     </div>
-                    {/* Sign Out Button */}
-                    <button
-                        onClick={async () => { await logout(); navigate('/') }}
-                        style={{
-                            display: 'flex', alignItems: 'center', gap: 6,
-                            padding: '8px 16px', borderRadius: 10,
-                            background: 'rgba(239,68,68,0.08)',
-                            border: '1px solid rgba(239,68,68,0.2)',
-                            color: '#f87171', fontSize: 12, fontWeight: 600,
-                            cursor: 'pointer', flexShrink: 0,
-                            transition: 'all 0.2s'
-                        }}
-                        onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.15)'; e.currentTarget.style.borderColor = 'rgba(239,68,68,0.35)' }}
-                        onMouseLeave={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.08)'; e.currentTarget.style.borderColor = 'rgba(239,68,68,0.2)' }}
-                    >
-                        <LogOut size={14} />
-                        Sign Out
-                    </button>
+                    {/* Action Buttons */}
+                    <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginLeft: 'auto' }}>
+                        {userRole !== 'admin' && (
+                            !isEditing ? (
+                                <button
+                                    onClick={() => setIsEditing(true)}
+                                    style={{
+                                        display: 'flex', alignItems: 'center', gap: 6,
+                                        padding: '8px 16px', borderRadius: 10,
+                                        background: 'rgba(99,102,241,0.15)',
+                                        border: `1px solid ${ACCENT}40`,
+                                        color: '#a5b4fc', fontSize: 12, fontWeight: 600,
+                                        cursor: 'pointer', transition: 'all 0.2s'
+                                    }}
+                                >
+                                    <Edit2 size={14} />
+                                    Edit Profile
+                                </button>
+                            ) : (
+                                <>
+                                    <button
+                                        onClick={async (e) => {
+                                            if (userRole === 'mentor') {
+                                                await handleSaveMentorProfile(e);
+                                            } else {
+                                                await handleSaveStudentProfile(e);
+                                            }
+                                            setIsEditing(false);
+                                        }}
+                                        disabled={saving}
+                                        style={{
+                                            display: 'flex', alignItems: 'center', gap: 6,
+                                            padding: '8px 16px', borderRadius: 10,
+                                            background: 'linear-gradient(135deg, #22c55e 0%, #15803d 100%)',
+                                            border: 'none',
+                                            color: '#fff', fontSize: 12, fontWeight: 700,
+                                            cursor: 'pointer', transition: 'all 0.2s'
+                                        }}
+                                    >
+                                        <Check size={14} />
+                                        Save Changes
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            setIsEditing(false);
+                                            setReloadKey(k => k + 1);
+                                        }}
+                                        style={{
+                                            display: 'flex', alignItems: 'center', gap: 6,
+                                            padding: '8px 16px', borderRadius: 10,
+                                            background: 'rgba(255,255,255,0.05)',
+                                            border: `1px solid ${BORDER}`,
+                                            color: TEXT, fontSize: 12, fontWeight: 600,
+                                            cursor: 'pointer', transition: 'all 0.2s'
+                                        }}
+                                    >
+                                        <X size={14} />
+                                        Cancel
+                                    </button>
+                                </>
+                            )
+                        )}
+                        <button
+                            onClick={async () => { await logout(); navigate('/') }}
+                            style={{
+                                display: 'flex', alignItems: 'center', gap: 6,
+                                padding: '8px 16px', borderRadius: 10,
+                                background: 'rgba(239,68,68,0.08)',
+                                border: '1px solid rgba(239,68,68,0.2)',
+                                color: '#f87171', fontSize: 12, fontWeight: 600,
+                                cursor: 'pointer', flexShrink: 0,
+                                transition: 'all 0.2s'
+                            }}
+                            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.15)'; e.currentTarget.style.borderColor = 'rgba(239,68,68,0.35)' }}
+                            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.08)'; e.currentTarget.style.borderColor = 'rgba(239,68,68,0.2)' }}
+                        >
+                            <LogOut size={14} />
+                            Sign Out
+                        </button>
+                    </div>
                 </div>
 
                 {/* 👑 ADMIN SPECIFIC PROFILE */}
@@ -333,29 +397,62 @@ export default function ProfilePage() {
                             <Briefcase size={18} color={ACCENT} />
                             <h3 style={{ fontSize: 16, fontWeight: 700, color: TEXT, margin: 0 }}>Mentor Biography & Info</h3>
                         </div>
-                        <form onSubmit={handleSaveMentorProfile} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                                <div>
-                                    <label style={{ fontSize: 11, color: MUTED, display: 'block', marginBottom: 4 }}>Designation</label>
-                                    <input value={mentorProfile.designation} onChange={e => setMentorProfile(p => ({ ...p, designation: e.target.value }))} placeholder="E.g. Senior Software Architect" style={{ width: '100%', padding: '10px 14px', background: 'rgba(0,0,0,0.25)', border: `1px solid ${BORDER}`, borderRadius: 12, color: TEXT, fontSize: 13, outline: 'none', boxSizing: 'border-box' }} />
+                        {!isEditing ? (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                                    <div style={{ padding: 14, background: 'rgba(255,255,255,0.01)', border: `1px solid ${BORDER}`, borderRadius: 12 }}>
+                                        <span style={{ fontSize: 11, color: MUTED, display: 'block', marginBottom: 4 }}>Designation</span>
+                                        <span style={{ fontSize: 14, fontWeight: 600, color: TEXT }}>{mentorProfile.designation || 'Not specified'}</span>
+                                    </div>
+                                    <div style={{ padding: 14, background: 'rgba(255,255,255,0.01)', border: `1px solid ${BORDER}`, borderRadius: 12 }}>
+                                        <span style={{ fontSize: 11, color: MUTED, display: 'block', marginBottom: 4 }}>Company / Organization</span>
+                                        <span style={{ fontSize: 14, fontWeight: 600, color: TEXT }}>{mentorProfile.company || 'Not specified'}</span>
+                                    </div>
+                                </div>
+                                <div style={{ padding: 14, background: 'rgba(255,255,255,0.01)', border: `1px solid ${BORDER}`, borderRadius: 12 }}>
+                                    <span style={{ fontSize: 11, color: MUTED, display: 'block', marginBottom: 8 }}>Skills</span>
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                                        {mentorProfile.skills ? mentorProfile.skills.split(',').map((skill, i) => (
+                                            <span key={i} style={{
+                                                fontSize: 11, padding: '4px 10px', borderRadius: 8,
+                                                background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.25)',
+                                                color: '#a5b4fc'
+                                            }}>{skill.trim()}</span>
+                                        )) : <span style={{ fontSize: 13, color: MUTED }}>No skills listed</span>}
+                                    </div>
+                                </div>
+                                <div style={{ padding: 14, background: 'rgba(255,255,255,0.01)', border: `1px solid ${BORDER}`, borderRadius: 12 }}>
+                                    <span style={{ fontSize: 11, color: MUTED, display: 'block', marginBottom: 6 }}>Professional Biography / Introduction</span>
+                                    <p style={{ fontSize: 13, color: TEXT, margin: 0, whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
+                                        {mentorProfile.profileInfo || 'No biography written yet.'}
+                                    </p>
+                                </div>
+                            </div>
+                        ) : (
+                            <form onSubmit={handleSaveMentorProfile} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                                    <div>
+                                        <label style={{ fontSize: 11, color: MUTED, display: 'block', marginBottom: 4 }}>Designation</label>
+                                        <input value={mentorProfile.designation} onChange={e => setMentorProfile(p => ({ ...p, designation: e.target.value }))} placeholder="E.g. Senior Software Architect" style={{ width: '100%', padding: '10px 14px', background: 'rgba(0,0,0,0.25)', border: `1px solid ${BORDER}`, borderRadius: 12, color: TEXT, fontSize: 13, outline: 'none', boxSizing: 'border-box' }} />
+                                    </div>
+                                    <div>
+                                        <label style={{ fontSize: 11, color: MUTED, display: 'block', marginBottom: 4 }}>Company / Organization</label>
+                                        <input value={mentorProfile.company} onChange={e => setMentorProfile(p => ({ ...p, company: e.target.value }))} placeholder="E.g. Microsoft" style={{ width: '100%', padding: '10px 14px', background: 'rgba(0,0,0,0.25)', border: `1px solid ${BORDER}`, borderRadius: 12, color: TEXT, fontSize: 13, outline: 'none', boxSizing: 'border-box' }} />
+                                    </div>
                                 </div>
                                 <div>
-                                    <label style={{ fontSize: 11, color: MUTED, display: 'block', marginBottom: 4 }}>Company / Organization</label>
-                                    <input value={mentorProfile.company} onChange={e => setMentorProfile(p => ({ ...p, company: e.target.value }))} placeholder="E.g. Microsoft" style={{ width: '100%', padding: '10px 14px', background: 'rgba(0,0,0,0.25)', border: `1px solid ${BORDER}`, borderRadius: 12, color: TEXT, fontSize: 13, outline: 'none', boxSizing: 'border-box' }} />
+                                    <label style={{ fontSize: 11, color: MUTED, display: 'block', marginBottom: 4 }}>Skills (comma-separated)</label>
+                                    <input value={mentorProfile.skills} onChange={e => setMentorProfile(p => ({ ...p, skills: e.target.value }))} placeholder="E.g. React, Systems Design, Go, Python" style={{ width: '100%', padding: '10px 14px', background: 'rgba(0,0,0,0.25)', border: `1px solid ${BORDER}`, borderRadius: 12, color: TEXT, fontSize: 13, outline: 'none', boxSizing: 'border-box' }} />
                                 </div>
-                            </div>
-                            <div>
-                                <label style={{ fontSize: 11, color: MUTED, display: 'block', marginBottom: 4 }}>Skills (comma-separated)</label>
-                                <input value={mentorProfile.skills} onChange={e => setMentorProfile(p => ({ ...p, skills: e.target.value }))} placeholder="E.g. React, Systems Design, Go, Python" style={{ width: '100%', padding: '10px 14px', background: 'rgba(0,0,0,0.25)', border: `1px solid ${BORDER}`, borderRadius: 12, color: TEXT, fontSize: 13, outline: 'none', boxSizing: 'border-box' }} />
-                            </div>
-                            <div>
-                                <label style={{ fontSize: 11, color: MUTED, display: 'block', marginBottom: 4 }}>Professional Biography / Introduction</label>
-                                <textarea value={mentorProfile.profileInfo} onChange={e => setMentorProfile(p => ({ ...p, profileInfo: e.target.value }))} placeholder="Tell your mentees about your career journey, guidance areas, and background..." rows={5} style={{ width: '100%', padding: '10px 14px', background: 'rgba(0,0,0,0.25)', border: `1px solid ${BORDER}`, borderRadius: 12, color: TEXT, fontSize: 13, outline: 'none', resize: 'vertical', lineHighlight: 1.6, boxSizing: 'border-box' }} />
-                            </div>
-                            <button type="submit" disabled={saving} style={{ padding: '12px 20px', borderRadius: 12, background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)', border: 'none', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', alignSelf: 'flex-start', display: 'flex', alignItems: 'center', gap: 6 }}>
-                                {saving && <RefreshCw size={14} className="animate-spin" />} Save Bio Details
-                            </button>
-                        </form>
+                                <div>
+                                    <label style={{ fontSize: 11, color: MUTED, display: 'block', marginBottom: 4 }}>Professional Biography / Introduction</label>
+                                    <textarea value={mentorProfile.profileInfo} onChange={e => setMentorProfile(p => ({ ...p, profileInfo: e.target.value }))} placeholder="Tell your mentees about your career journey, guidance areas, and background..." rows={5} style={{ width: '100%', padding: '10px 14px', background: 'rgba(0,0,0,0.25)', border: `1px solid ${BORDER}`, borderRadius: 12, color: TEXT, fontSize: 13, outline: 'none', resize: 'vertical', lineHighlight: 1.6, boxSizing: 'border-box' }} />
+                                </div>
+                                <button type="submit" disabled={saving} style={{ padding: '12px 20px', borderRadius: 12, background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)', border: 'none', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', alignSelf: 'flex-start', display: 'flex', alignItems: 'center', gap: 6 }}>
+                                    {saving && <RefreshCw size={14} className="animate-spin" />} Save Bio Details
+                                </button>
+                            </form>
+                        )}
                     </div>
                 )}
 
@@ -369,20 +466,27 @@ export default function ProfilePage() {
                                 <Target size={18} color="#818cf8" />
                                 <h3 style={{ fontSize: 15, fontWeight: 700, color: TEXT, margin: 0 }}>Career Goal Preference</h3>
                             </div>
-                            <div>
-                                <label style={{ fontSize: 11, color: MUTED, display: 'block', marginBottom: 6 }}>What is your Target Career Role?</label>
-                                <input
-                                    value={roleInput}
-                                    onChange={e => setRoleInput(e.target.value)}
-                                    placeholder="E.g. Full Stack Developer, Data Scientist..."
-                                    style={{
-                                        width: '100%', padding: '12px 16px',
-                                        background: 'rgba(0,0,0,0.3)', border: `1px solid ${BORDER}`,
-                                        borderRadius: 12, color: TEXT, fontSize: 13, outline: 'none',
-                                        boxSizing: 'border-box'
-                                    }}
-                                />
-                            </div>
+                            {!isEditing ? (
+                                <div style={{ padding: 14, background: 'rgba(255,255,255,0.01)', border: `1px solid ${BORDER}`, borderRadius: 12 }}>
+                                    <span style={{ fontSize: 11, color: MUTED, display: 'block', marginBottom: 4 }}>Target Career Role</span>
+                                    <span style={{ fontSize: 14, fontWeight: 600, color: TEXT }}>{roleInput || 'Not specified'}</span>
+                                </div>
+                            ) : (
+                                <div>
+                                    <label style={{ fontSize: 11, color: MUTED, display: 'block', marginBottom: 6 }}>What is your Target Career Role?</label>
+                                    <input
+                                        value={roleInput}
+                                        onChange={e => setRoleInput(e.target.value)}
+                                        placeholder="E.g. Full Stack Developer, Data Scientist..."
+                                        style={{
+                                            width: '100%', padding: '12px 16px',
+                                            background: 'rgba(0,0,0,0.3)', border: `1px solid ${BORDER}`,
+                                            borderRadius: 12, color: TEXT, fontSize: 13, outline: 'none',
+                                            boxSizing: 'border-box'
+                                        }}
+                                    />
+                                </div>
+                            )}
                         </div>
 
                         {/* College Details */}
@@ -391,24 +495,45 @@ export default function ProfilePage() {
                                 <GraduationCap size={18} color="#818cf8" />
                                 <h3 style={{ fontSize: 15, fontWeight: 700, color: TEXT, margin: 0 }}>College / Educational Details</h3>
                             </div>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
-                                <div>
-                                    <label style={{ fontSize: 11, color: MUTED, display: 'block', marginBottom: 4 }}>College / University Name</label>
-                                    <input value={college.collegeName} onChange={e => setCollege(c => ({ ...c, collegeName: e.target.value }))} placeholder="E.g. Stanford University" style={{ width: '100%', padding: '10px 14px', background: 'rgba(0,0,0,0.25)', border: `1px solid ${BORDER}`, borderRadius: 12, color: TEXT, fontSize: 13, outline: 'none', boxSizing: 'border-box' }} />
+                            {!isEditing ? (
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
+                                    <div style={{ padding: 12, background: 'rgba(255,255,255,0.01)', border: `1px solid ${BORDER}`, borderRadius: 12 }}>
+                                        <span style={{ fontSize: 11, color: MUTED, display: 'block', marginBottom: 4 }}>College / University Name</span>
+                                        <span style={{ fontSize: 13, fontWeight: 600, color: TEXT }}>{college.collegeName || 'Not specified'}</span>
+                                    </div>
+                                    <div style={{ padding: 12, background: 'rgba(255,255,255,0.01)', border: `1px solid ${BORDER}`, borderRadius: 12 }}>
+                                        <span style={{ fontSize: 11, color: MUTED, display: 'block', marginBottom: 4 }}>Degree & Major</span>
+                                        <span style={{ fontSize: 13, fontWeight: 600, color: TEXT }}>{college.degree || 'Not specified'}</span>
+                                    </div>
+                                    <div style={{ padding: 12, background: 'rgba(255,255,255,0.01)', border: `1px solid ${BORDER}`, borderRadius: 12 }}>
+                                        <span style={{ fontSize: 11, color: MUTED, display: 'block', marginBottom: 4 }}>Graduation Year</span>
+                                        <span style={{ fontSize: 13, fontWeight: 600, color: TEXT }}>{college.gradYear || 'Not specified'}</span>
+                                    </div>
+                                    <div style={{ padding: 12, background: 'rgba(255,255,255,0.01)', border: `1px solid ${BORDER}`, borderRadius: 12 }}>
+                                        <span style={{ fontSize: 11, color: MUTED, display: 'block', marginBottom: 4 }}>GPA / Grade Percentage</span>
+                                        <span style={{ fontSize: 13, fontWeight: 600, color: TEXT }}>{college.gpa || 'Not specified'}</span>
+                                    </div>
                                 </div>
-                                <div>
-                                    <label style={{ fontSize: 11, color: MUTED, display: 'block', marginBottom: 4 }}>Degree & Major</label>
-                                    <input value={college.degree} onChange={e => setCollege(c => ({ ...c, degree: e.target.value }))} placeholder="E.g. B.S. in Computer Science" style={{ width: '100%', padding: '10px 14px', background: 'rgba(0,0,0,0.25)', border: `1px solid ${BORDER}`, borderRadius: 12, color: TEXT, fontSize: 13, outline: 'none', boxSizing: 'border-box' }} />
+                            ) : (
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
+                                    <div>
+                                        <label style={{ fontSize: 11, color: MUTED, display: 'block', marginBottom: 4 }}>College / University Name</label>
+                                        <input value={college.collegeName} onChange={e => setCollege(c => ({ ...c, collegeName: e.target.value }))} placeholder="E.g. Stanford University" style={{ width: '100%', padding: '10px 14px', background: 'rgba(0,0,0,0.25)', border: `1px solid ${BORDER}`, borderRadius: 12, color: TEXT, fontSize: 13, outline: 'none', boxSizing: 'border-box' }} />
+                                    </div>
+                                    <div>
+                                        <label style={{ fontSize: 11, color: MUTED, display: 'block', marginBottom: 4 }}>Degree & Major</label>
+                                        <input value={college.degree} onChange={e => setCollege(c => ({ ...c, degree: e.target.value }))} placeholder="E.g. B.S. in Computer Science" style={{ width: '100%', padding: '10px 14px', background: 'rgba(0,0,0,0.25)', border: `1px solid ${BORDER}`, borderRadius: 12, color: TEXT, fontSize: 13, outline: 'none', boxSizing: 'border-box' }} />
+                                    </div>
+                                    <div>
+                                        <label style={{ fontSize: 11, color: MUTED, display: 'block', marginBottom: 4 }}>Graduation Year</label>
+                                        <input value={college.gradYear} onChange={e => setCollege(c => ({ ...c, gradYear: e.target.value }))} placeholder="E.g. 2026" style={{ width: '100%', padding: '10px 14px', background: 'rgba(0,0,0,0.25)', border: `1px solid ${BORDER}`, borderRadius: 12, color: TEXT, fontSize: 13, outline: 'none', boxSizing: 'border-box' }} />
+                                    </div>
+                                    <div>
+                                        <label style={{ fontSize: 11, color: MUTED, display: 'block', marginBottom: 4 }}>GPA / Grade Percentage</label>
+                                        <input value={college.gpa} onChange={e => setCollege(c => ({ ...c, gpa: e.target.value }))} placeholder="E.g. 3.8/4.0 or 85%" style={{ width: '100%', padding: '10px 14px', background: 'rgba(0,0,0,0.25)', border: `1px solid ${BORDER}`, borderRadius: 12, color: TEXT, fontSize: 13, outline: 'none', boxSizing: 'border-box' }} />
+                                    </div>
                                 </div>
-                                <div>
-                                    <label style={{ fontSize: 11, color: MUTED, display: 'block', marginBottom: 4 }}>Graduation Year</label>
-                                    <input value={college.gradYear} onChange={e => setCollege(c => ({ ...c, gradYear: e.target.value }))} placeholder="E.g. 2026" style={{ width: '100%', padding: '10px 14px', background: 'rgba(0,0,0,0.25)', border: `1px solid ${BORDER}`, borderRadius: 12, color: TEXT, fontSize: 13, outline: 'none', boxSizing: 'border-box' }} />
-                                </div>
-                                <div>
-                                    <label style={{ fontSize: 11, color: MUTED, display: 'block', marginBottom: 4 }}>GPA / Grade Percentage</label>
-                                    <input value={college.gpa} onChange={e => setCollege(c => ({ ...c, gpa: e.target.value }))} placeholder="E.g. 3.8/4.0 or 85%" style={{ width: '100%', padding: '10px 14px', background: 'rgba(0,0,0,0.25)', border: `1px solid ${BORDER}`, borderRadius: 12, color: TEXT, fontSize: 13, outline: 'none', boxSizing: 'border-box' }} />
-                                </div>
-                            </div>
+                            )}
                         </div>
 
                         {/* Projects editor */}
@@ -418,28 +543,35 @@ export default function ProfilePage() {
                                 <h3 style={{ fontSize: 15, fontWeight: 700, color: TEXT, margin: 0 }}>Academic & Personal Projects</h3>
                             </div>
                             
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 16 }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: isEditing && projects.length > 0 ? 16 : 0 }}>
                                 {projects.map((proj, idx) => (
-                                    <div key={idx} style={{ padding: 14, background: 'rgba(255,255,255,0.02)', border: `1px solid ${BORDER}`, borderRadius: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                        <div>
+                                    <div key={idx} style={{ padding: 14, background: 'rgba(255,255,255,0.01)', border: `1px solid ${BORDER}`, borderRadius: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                        <div style={{ flex: 1, marginRight: 16 }}>
                                             <p style={{ fontSize: 13, fontWeight: 700, color: TEXT, margin: '0 0 3px' }}>{proj.title}</p>
                                             <p style={{ fontSize: 12, color: MUTED, margin: '0 0 6px', lineHeight: 1.5 }}>{proj.description}</p>
                                             {proj.github && <a href={proj.github} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: '#818cf8', display: 'flex', alignItems: 'center', gap: 3, textDecoration: 'none' }}><ExternalLink size={11} /> GitHub Link</a>}
                                         </div>
-                                        <button type="button" onClick={() => removeProject(idx)} style={{ background: 'transparent', border: 'none', color: RED, cursor: 'pointer' }}><Trash2 size={14} /></button>
+                                        {isEditing && (
+                                            <button type="button" onClick={() => removeProject(idx)} style={{ background: 'transparent', border: 'none', color: RED, cursor: 'pointer' }}><Trash2 size={14} /></button>
+                                        )}
                                     </div>
                                 ))}
+                                {projects.length === 0 && (
+                                    <p style={{ fontSize: 12, color: MUTED, margin: 0 }}>No projects listed.</p>
+                                )}
                             </div>
 
-                            <div style={{ background: 'rgba(0,0,0,0.15)', border: `1px dashed ${BORDER}`, borderRadius: 12, padding: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                                <p style={{ fontSize: 11, fontWeight: 700, color: TEXT, margin: 0 }}>Add New Project</p>
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                                    <input value={newProj.title} onChange={e => setNewProj(p => ({ ...p, title: e.target.value }))} placeholder="Project Title" style={{ width: '100%', padding: '8px 12px', background: 'rgba(0,0,0,0.2)', border: `1px solid ${BORDER}`, borderRadius: 8, color: TEXT, fontSize: 12, outline: 'none' }} />
-                                    <input value={newProj.github} onChange={e => setNewProj(p => ({ ...p, github: e.target.value }))} placeholder="GitHub Repository URL" style={{ width: '100%', padding: '8px 12px', background: 'rgba(0,0,0,0.2)', border: `1px solid ${BORDER}`, borderRadius: 8, color: TEXT, fontSize: 12, outline: 'none' }} />
+                            {isEditing && (
+                                <div style={{ background: 'rgba(0,0,0,0.15)', border: `1px dashed ${BORDER}`, borderRadius: 12, padding: 14, display: 'flex', flexDirection: 'column', gap: 10, marginTop: 12 }}>
+                                    <p style={{ fontSize: 11, fontWeight: 700, color: TEXT, margin: 0 }}>Add New Project</p>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                                        <input value={newProj.title} onChange={e => setNewProj(p => ({ ...p, title: e.target.value }))} placeholder="Project Title" style={{ width: '100%', padding: '8px 12px', background: 'rgba(0,0,0,0.2)', border: `1px solid ${BORDER}`, borderRadius: 8, color: TEXT, fontSize: 12, outline: 'none' }} />
+                                        <input value={newProj.github} onChange={e => setNewProj(p => ({ ...p, github: e.target.value }))} placeholder="GitHub Repository URL" style={{ width: '100%', padding: '8px 12px', background: 'rgba(0,0,0,0.2)', border: `1px solid ${BORDER}`, borderRadius: 8, color: TEXT, fontSize: 12, outline: 'none' }} />
+                                    </div>
+                                    <input value={newProj.description} onChange={e => setNewProj(p => ({ ...p, description: e.target.value }))} placeholder="Project Description (technologies, scope, results)" style={{ width: '100%', padding: '8px 12px', background: 'rgba(0,0,0,0.2)', border: `1px solid ${BORDER}`, borderRadius: 8, color: TEXT, fontSize: 12, outline: 'none' }} />
+                                    <button type="button" onClick={addProject} style={{ padding: '7px 12px', borderRadius: 8, background: 'rgba(99,102,241,0.15)', border: `1px solid ${ACCENT}30`, color: '#a5b4fc', fontSize: 12, fontWeight: 600, cursor: 'pointer', alignSelf: 'flex-start', display: 'flex', alignItems: 'center', gap: 4 }}><Plus size={13} /> Add to List</button>
                                 </div>
-                                <input value={newProj.description} onChange={e => setNewProj(p => ({ ...p, description: e.target.value }))} placeholder="Project Description (technologies, scope, results)" style={{ width: '100%', padding: '8px 12px', background: 'rgba(0,0,0,0.2)', border: `1px solid ${BORDER}`, borderRadius: 8, color: TEXT, fontSize: 12, outline: 'none' }} />
-                                <button type="button" onClick={addProject} style={{ padding: '7px 12px', borderRadius: 8, background: 'rgba(99,102,241,0.15)', border: `1px solid ${ACCENT}30`, color: '#a5b4fc', fontSize: 12, fontWeight: 600, cursor: 'pointer', alignSelf: 'flex-start', display: 'flex', alignItems: 'center', gap: 4 }}><Plus size={13} /> Add to List</button>
-                            </div>
+                            )}
                         </div>
 
                         {/* Certifications editor */}
@@ -449,28 +581,35 @@ export default function ProfilePage() {
                                 <h3 style={{ fontSize: 15, fontWeight: 700, color: TEXT, margin: 0 }}>Professional Certifications</h3>
                             </div>
                             
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 16 }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: isEditing && certifications.length > 0 ? 16 : 0 }}>
                                 {certifications.map((cert, idx) => (
-                                    <div key={idx} style={{ padding: 12, background: 'rgba(255,255,255,0.02)', border: `1px solid ${BORDER}`, borderRadius: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                        <div>
+                                    <div key={idx} style={{ padding: 12, background: 'rgba(255,255,255,0.01)', border: `1px solid ${BORDER}`, borderRadius: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                        <div style={{ flex: 1, marginRight: 16 }}>
                                             <p style={{ fontSize: 13, fontWeight: 700, color: TEXT, margin: '0 0 2px' }}>{cert.title}</p>
                                             <p style={{ fontSize: 12, color: MUTED, margin: '0 0 4px' }}>Platform: {cert.platform || 'N/A'}</p>
                                             {cert.link && <a href={cert.link} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: '#818cf8', display: 'flex', alignItems: 'center', gap: 3, textDecoration: 'none' }}><ExternalLink size={11} /> Credential URL</a>}
                                         </div>
-                                        <button type="button" onClick={() => removeCertification(idx)} style={{ background: 'transparent', border: 'none', color: RED, cursor: 'pointer' }}><Trash2 size={14} /></button>
+                                        {isEditing && (
+                                            <button type="button" onClick={() => removeCertification(idx)} style={{ background: 'transparent', border: 'none', color: RED, cursor: 'pointer' }}><Trash2 size={14} /></button>
+                                        )}
                                     </div>
                                 ))}
+                                {certifications.length === 0 && (
+                                    <p style={{ fontSize: 12, color: MUTED, margin: 0 }}>No certifications listed.</p>
+                                )}
                             </div>
 
-                            <div style={{ background: 'rgba(0,0,0,0.15)', border: `1px dashed ${BORDER}`, borderRadius: 12, padding: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                                <p style={{ fontSize: 11, fontWeight: 700, color: TEXT, margin: 0 }}>Add New Certification</p>
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                                    <input value={newCert.title} onChange={e => setNewCert(c => ({ ...c, title: e.target.value }))} placeholder="Certification Title (e.g. AWS Cloud Practitioner)" style={{ width: '100%', padding: '8px 12px', background: 'rgba(0,0,0,0.2)', border: `1px solid ${BORDER}`, borderRadius: 8, color: TEXT, fontSize: 12, outline: 'none' }} />
-                                    <input value={newCert.platform} onChange={e => setNewCert(c => ({ ...c, platform: e.target.value }))} placeholder="Platform / Provider (e.g. Coursera, Amazon)" style={{ width: '100%', padding: '8px 12px', background: 'rgba(0,0,0,0.2)', border: `1px solid ${BORDER}`, borderRadius: 8, color: TEXT, fontSize: 12, outline: 'none' }} />
+                            {isEditing && (
+                                <div style={{ background: 'rgba(0,0,0,0.15)', border: `1px dashed ${BORDER}`, borderRadius: 12, padding: 14, display: 'flex', flexDirection: 'column', gap: 10, marginTop: 12 }}>
+                                    <p style={{ fontSize: 11, fontWeight: 700, color: TEXT, margin: 0 }}>Add New Certification</p>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                                        <input value={newCert.title} onChange={e => setNewCert(c => ({ ...c, title: e.target.value }))} placeholder="Certification Title (e.g. AWS Cloud Practitioner)" style={{ width: '100%', padding: '8px 12px', background: 'rgba(0,0,0,0.2)', border: `1px solid ${BORDER}`, borderRadius: 8, color: TEXT, fontSize: 12, outline: 'none' }} />
+                                        <input value={newCert.platform} onChange={e => setNewCert(c => ({ ...c, platform: e.target.value }))} placeholder="Platform / Provider (e.g. Coursera, Amazon)" style={{ width: '100%', padding: '8px 12px', background: 'rgba(0,0,0,0.2)', border: `1px solid ${BORDER}`, borderRadius: 8, color: TEXT, fontSize: 12, outline: 'none' }} />
+                                    </div>
+                                    <input value={newCert.link} onChange={e => setNewCert(c => ({ ...c, link: e.target.value }))} placeholder="Verification Link URL" style={{ width: '100%', padding: '8px 12px', background: 'rgba(0,0,0,0.2)', border: `1px solid ${BORDER}`, borderRadius: 8, color: TEXT, fontSize: 12, outline: 'none' }} />
+                                    <button type="button" onClick={addCertification} style={{ padding: '7px 12px', borderRadius: 8, background: 'rgba(99,102,241,0.15)', border: `1px solid ${ACCENT}30`, color: '#a5b4fc', fontSize: 12, fontWeight: 600, cursor: 'pointer', alignSelf: 'flex-start', display: 'flex', alignItems: 'center', gap: 4 }}><Plus size={13} /> Add to List</button>
                                 </div>
-                                <input value={newCert.link} onChange={e => setNewCert(c => ({ ...c, link: e.target.value }))} placeholder="Verification Link URL" style={{ width: '100%', padding: '8px 12px', background: 'rgba(0,0,0,0.2)', border: `1px solid ${BORDER}`, borderRadius: 8, color: TEXT, fontSize: 12, outline: 'none' }} />
-                                <button type="button" onClick={addCertification} style={{ padding: '7px 12px', borderRadius: 8, background: 'rgba(99,102,241,0.15)', border: `1px solid ${ACCENT}30`, color: '#a5b4fc', fontSize: 12, fontWeight: 600, cursor: 'pointer', alignSelf: 'flex-start', display: 'flex', alignItems: 'center', gap: 4 }}><Plus size={13} /> Add to List</button>
-                            </div>
+                            )}
                         </div>
 
                         {/* Internship Experience */}
@@ -480,29 +619,36 @@ export default function ProfilePage() {
                                 <h3 style={{ fontSize: 15, fontWeight: 700, color: TEXT, margin: 0 }}>Internship & Work Experience</h3>
                             </div>
                             
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 16 }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: isEditing && internships.length > 0 ? 16 : 0 }}>
                                 {internships.map((intern, idx) => (
-                                    <div key={idx} style={{ padding: 14, background: 'rgba(255,255,255,0.02)', border: `1px solid ${BORDER}`, borderRadius: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                        <div>
+                                    <div key={idx} style={{ padding: 14, background: 'rgba(255,255,255,0.01)', border: `1px solid ${BORDER}`, borderRadius: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                        <div style={{ flex: 1, marginRight: 16 }}>
                                             <p style={{ fontSize: 13, fontWeight: 700, color: TEXT, margin: '0 0 2px' }}>{intern.role} · {intern.company}</p>
                                             <p style={{ fontSize: 11, color: ACCENT, fontWeight: 600, margin: '0 0 6px' }}>{intern.duration}</p>
                                             <p style={{ fontSize: 12, color: MUTED, margin: 0, lineHeight: 1.5 }}>{intern.description}</p>
                                         </div>
-                                        <button type="button" onClick={() => removeInternship(idx)} style={{ background: 'transparent', border: 'none', color: RED, cursor: 'pointer' }}><Trash2 size={14} /></button>
+                                        {isEditing && (
+                                            <button type="button" onClick={() => removeInternship(idx)} style={{ background: 'transparent', border: 'none', color: RED, cursor: 'pointer' }}><Trash2 size={14} /></button>
+                                        )}
                                     </div>
                                 ))}
+                                {internships.length === 0 && (
+                                    <p style={{ fontSize: 12, color: MUTED, margin: 0 }}>No work experience listed.</p>
+                                )}
                             </div>
 
-                            <div style={{ background: 'rgba(0,0,0,0.15)', border: `1px dashed ${BORDER}`, borderRadius: 12, padding: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                                <p style={{ fontSize: 11, fontWeight: 700, color: TEXT, margin: 0 }}>Add Work/Internship Record</p>
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
-                                    <input value={newIntern.company} onChange={e => setNewIntern(i => ({ ...i, company: e.target.value }))} placeholder="Company / Org Name" style={{ width: '100%', padding: '8px 12px', background: 'rgba(0,0,0,0.2)', border: `1px solid ${BORDER}`, borderRadius: 8, color: TEXT, fontSize: 12, outline: 'none' }} />
-                                    <input value={newIntern.role} onChange={e => setNewIntern(i => ({ ...i, role: e.target.value }))} placeholder="Role (e.g. Frontend Intern)" style={{ width: '100%', padding: '8px 12px', background: 'rgba(0,0,0,0.2)', border: `1px solid ${BORDER}`, borderRadius: 8, color: TEXT, fontSize: 12, outline: 'none' }} />
-                                    <input value={newIntern.duration} onChange={e => setNewIntern(i => ({ ...i, duration: e.target.value }))} placeholder="Duration (e.g. 3 Months)" style={{ width: '100%', padding: '8px 12px', background: 'rgba(0,0,0,0.2)', border: `1px solid ${BORDER}`, borderRadius: 8, color: TEXT, fontSize: 12, outline: 'none' }} />
+                            {isEditing && (
+                                <div style={{ background: 'rgba(0,0,0,0.15)', border: `1px dashed ${BORDER}`, borderRadius: 12, padding: 14, display: 'flex', flexDirection: 'column', gap: 10, marginTop: 12 }}>
+                                    <p style={{ fontSize: 11, fontWeight: 700, color: TEXT, margin: 0 }}>Add Work/Internship Record</p>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+                                        <input value={newIntern.company} onChange={e => setNewIntern(i => ({ ...i, company: e.target.value }))} placeholder="Company / Org Name" style={{ width: '100%', padding: '8px 12px', background: 'rgba(0,0,0,0.2)', border: `1px solid ${BORDER}`, borderRadius: 8, color: TEXT, fontSize: 12, outline: 'none' }} />
+                                        <input value={newIntern.role} onChange={e => setNewIntern(i => ({ ...i, role: e.target.value }))} placeholder="Role (e.g. Frontend Intern)" style={{ width: '100%', padding: '8px 12px', background: 'rgba(0,0,0,0.2)', border: `1px solid ${BORDER}`, borderRadius: 8, color: TEXT, fontSize: 12, outline: 'none' }} />
+                                        <input value={newIntern.duration} onChange={e => setNewIntern(i => ({ ...i, duration: e.target.value }))} placeholder="Duration (e.g. 3 Months)" style={{ width: '100%', padding: '8px 12px', background: 'rgba(0,0,0,0.2)', border: `1px solid ${BORDER}`, borderRadius: 8, color: TEXT, fontSize: 12, outline: 'none' }} />
+                                    </div>
+                                    <input value={newIntern.description} onChange={e => setNewIntern(i => ({ ...i, description: e.target.value }))} placeholder="Describe your responsibilities, metrics, and outcomes..." style={{ width: '100%', padding: '8px 12px', background: 'rgba(0,0,0,0.2)', border: `1px solid ${BORDER}`, borderRadius: 8, color: TEXT, fontSize: 12, outline: 'none' }} />
+                                    <button type="button" onClick={addInternship} style={{ padding: '7px 12px', borderRadius: 8, background: 'rgba(99,102,241,0.15)', border: `1px solid ${ACCENT}30`, color: '#a5b4fc', fontSize: 12, fontWeight: 600, cursor: 'pointer', alignSelf: 'flex-start', display: 'flex', alignItems: 'center', gap: 4 }}><Plus size={13} /> Add to List</button>
                                 </div>
-                                <input value={newIntern.description} onChange={e => setNewIntern(i => ({ ...i, description: e.target.value }))} placeholder="Describe your responsibilities, metrics, and outcomes..." style={{ width: '100%', padding: '8px 12px', background: 'rgba(0,0,0,0.2)', border: `1px solid ${BORDER}`, borderRadius: 8, color: TEXT, fontSize: 12, outline: 'none' }} />
-                                <button type="button" onClick={addInternship} style={{ padding: '7px 12px', borderRadius: 8, background: 'rgba(99,102,241,0.15)', border: `1px solid ${ACCENT}30`, color: '#a5b4fc', fontSize: 12, fontWeight: 600, cursor: 'pointer', alignSelf: 'flex-start', display: 'flex', alignItems: 'center', gap: 4 }}><Plus size={13} /> Add to List</button>
-                            </div>
+                            )}
                         </div>
 
                         {/* Resume Status */}
@@ -512,7 +658,7 @@ export default function ProfilePage() {
                                     <FileText size={18} color="#818cf8" />
                                     <h3 style={{ fontSize: 15, fontWeight: 700, color: TEXT, margin: 0 }}>Resume & Extracted Data</h3>
                                 </div>
-                                {resumeText && (
+                                {isEditing && resumeText && (
                                     <button type="button" onClick={handleClearData} style={{
                                         padding: '6px 12px', borderRadius: 8,
                                         background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)',
@@ -584,17 +730,19 @@ export default function ProfilePage() {
                         </div>
 
                         {/* Save Button for Students */}
-                        <button type="submit" disabled={saving} style={{
-                            padding: '14px 28px', borderRadius: 14,
-                            background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
-                            border: 'none', color: '#fff', fontSize: 14, fontWeight: 700,
-                            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                            boxShadow: '0 8px 24px rgba(99,102,241,0.25)', transition: 'all 0.2s',
-                            alignSelf: 'flex-end', marginTop: 10
-                        }}>
-                            {saving ? <RefreshCw size={16} className="animate-spin" /> : null}
-                            Save All Profile Information
-                        </button>
+                        {isEditing && (
+                            <button type="submit" disabled={saving} style={{
+                                padding: '14px 28px', borderRadius: 14,
+                                background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
+                                border: 'none', color: '#fff', fontSize: 14, fontWeight: 700,
+                                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                                boxShadow: '0 8px 24px rgba(99,102,241,0.25)', transition: 'all 0.2s',
+                                alignSelf: 'flex-end', marginTop: 10
+                            }}>
+                                {saving ? <RefreshCw size={16} className="animate-spin" /> : null}
+                                Save All Profile Information
+                            </button>
+                        )}
                     </form>
                 )}
             </div>

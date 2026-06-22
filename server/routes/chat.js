@@ -98,18 +98,35 @@ router.get('/conversations', async (req, res) => {
                     const docSnap = await db.collection('users').doc(partnerUid).get();
                     if (docSnap.exists) {
                         const data = docSnap.data();
-                        name = data.name || data.email || '';
+                        name = data.name || '';
                         email = data.email || '';
                         role = data.role || 'student';
                     }
                 } catch (e) {
                     console.warn(`Firestore user lookup failed during conversation load for ${partnerUid}:`, e.message);
                 }
+
+                // 3. If name is empty, fall back to Firebase Auth lookup
+                if (!name) {
+                    try {
+                        const userRecord = await admin.auth().getUser(partnerUid);
+                        name = userRecord.displayName || '';
+                        if (!email) email = userRecord.email || '';
+                        role = userRecord.customClaims?.role || role || 'student';
+                    } catch (authErr) {
+                        console.warn(`Firebase Auth lookup failed during conversation load for ${partnerUid}:`, authErr.message);
+                    }
+                }
+
+                // 4. Ultimate fallback to email prefix or User
+                if (!name) {
+                    name = email ? email.split('@')[0] : 'User';
+                }
             }
 
             resolvedPartners.push({
                 uid: partnerUid,
-                name: name || email || 'User',
+                name: name,
                 email,
                 role,
                 lastMessage: lastMessagesMap[partnerUid]?.text || '',

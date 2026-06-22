@@ -63,11 +63,20 @@ export default function MentorDashboard() {
             if (res.ok) {
                 const data = await res.json()
                 if (data.success) {
-                    setStudents(data.students || [])
+                    const rawStudents = data.students || []
+                    const uniqueStudents = []
+                    const seenUids = new Set()
+                    for (const s of rawStudents) {
+                        if (s.uid && !seenUids.has(s.uid)) {
+                            seenUids.add(s.uid)
+                            uniqueStudents.push(s)
+                        }
+                    }
+                    setStudents(uniqueStudents)
                     // Auto-select first student if none selected and students exist
-                    const targetUid = selectUid || (data.students.length > 0 ? data.students[0].uid : null)
+                    const targetUid = selectUid || (uniqueStudents.length > 0 ? uniqueStudents[0].uid : null)
                     if (targetUid) {
-                        const matched = data.students.find(s => s.uid === targetUid)
+                        const matched = uniqueStudents.find(s => s.uid === targetUid)
                         if (matched) {
                             setSelectedStudentUid(targetUid)
                             setSelectedStudent(matched)
