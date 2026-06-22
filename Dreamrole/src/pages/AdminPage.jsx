@@ -275,7 +275,7 @@ export default function AdminPage() {
             <div style={{ maxWidth: 1100, margin: '0 auto', padding: '28px 20px' }}>
 
                 {/* Header */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28 }}>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
                     <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                         <div style={{
                             width: 46, height: 46, borderRadius: 14, background: `${RED}18`,
@@ -289,7 +289,7 @@ export default function AdminPage() {
                             <p style={{ fontSize: 12, color: MUTED, margin: 0 }}>DreamRole Platform Analytics</p>
                         </div>
                     </div>
-                    <div style={{ display: 'flex', gap: 10 }}>
+                    <div className="flex flex-wrap gap-2.5">
                         <button onClick={fetchData} style={{
                             padding: '9px 16px', borderRadius: 10, background: CARD,
                             border: `1px solid ${BORDER}`, color: TEXT, cursor: 'pointer', fontSize: 12,
@@ -317,7 +317,7 @@ export default function AdminPage() {
                 )}
 
                 {/* Tabs */}
-                <div style={{ display: 'flex', gap: 4, background: CARD, border: `1px solid ${BORDER}`, borderRadius: 14, padding: 4, marginBottom: 24, width: 'fit-content' }}>
+                <div className="flex flex-wrap gap-2.5 p-1 mb-6" style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 14, width: 'fit-content' }}>
                     {tabs.map(t => (
                         <button key={t} onClick={() => setActiveTab(t)} style={{
                             padding: '8px 18px', borderRadius: 10, border: 'none',
@@ -340,7 +340,7 @@ export default function AdminPage() {
                 {!loading && activeTab === 'overview' && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
                         {/* Stat cards */}
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14 }}>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
                             <StatCard icon={Users} label="Total Users" value={users.length || '—'} sub="Firebase Auth" color={ACCENT} />
                             <StatCard icon={Activity} label="Total Sessions" value={stats?.totalSessions ?? '—'} sub="Interview sessions" color={GREEN} />
                             <StatCard icon={Zap} label="API Calls Today" value={stats?.apiCallsToday ?? '—'} sub={`${stats?.todayTokens?.toLocaleString() || 0} tokens`} color={AMBER} />
@@ -348,7 +348,7 @@ export default function AdminPage() {
                         </div>
 
                         {/* Stage distribution + Cache stats */}
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18 }}>
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4.5">
                             {/* Stage donut */}
                             <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 20, padding: 22 }}>
                                 <SectionTitle icon={BarChart2} title="Interview Stage Distribution" subtitle="All time" />
@@ -423,7 +423,7 @@ export default function AdminPage() {
                 {!loading && activeTab === 'users' && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
                         {/* Filters */}
-                        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                        <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center">
                             <div style={{ flex: 1, position: 'relative' }}>
                                 <Search size={14} color={MUTED} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }} />
                                 <input
@@ -436,14 +436,16 @@ export default function AdminPage() {
                                     }}
                                 />
                             </div>
-                            {['all', 'student', 'mentor', 'admin'].map(r => (
-                                <button key={r} onClick={() => setRoleFilter(r)} style={{
-                                    padding: '9px 16px', borderRadius: 10, border: `1px solid ${roleFilter === r ? ACCENT + '60' : BORDER}`,
-                                    background: roleFilter === r ? `${ACCENT}18` : CARD,
-                                    color: roleFilter === r ? '#818cf8' : MUTED, cursor: 'pointer', fontSize: 12,
-                                    fontWeight: roleFilter === r ? 700 : 400, textTransform: 'capitalize'
-                                }}>{r}</button>
-                            ))}
+                            <div className="flex flex-wrap gap-2">
+                                {['all', 'student', 'mentor', 'admin'].map(r => (
+                                    <button key={r} onClick={() => setRoleFilter(r)} style={{
+                                        padding: '9px 16px', borderRadius: 10, border: `1px solid ${roleFilter === r ? ACCENT + '60' : BORDER}`,
+                                        background: roleFilter === r ? `${ACCENT}18` : CARD,
+                                        color: roleFilter === r ? '#818cf8' : MUTED, cursor: 'pointer', fontSize: 12,
+                                        fontWeight: roleFilter === r ? 700 : 400, textTransform: 'capitalize'
+                                    }}>{r}</button>
+                                ))}
+                            </div>
                         </div>
 
                         {/* Users table */}
@@ -520,7 +522,7 @@ export default function AdminPage() {
 
                 {/* ── MENTORS TAB ────────────────────────────────────────────── */}
                 {!loading && activeTab === 'mentors' && (
-                    <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: 20 }}>
+                    <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-5">
                         {/* Left: Add Mentor Form */}
                         <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 20, padding: 22, height: 'fit-content' }}>
                             <h3 style={{ fontSize: 16, fontWeight: 800, color: TEXT, margin: '0 0 16px' }}>Add Real Mentor</h3>
@@ -689,22 +691,24 @@ export default function AdminPage() {
                         </div>
                         <div style={{ maxHeight: 520, overflowY: 'auto' }}>
                             {logs.map((log, i) => (
-                                <div key={i} style={{
-                                    padding: '12px 20px',
+                                <div key={i} className="flex flex-col sm:flex-row sm:items-center gap-3 p-3.5" style={{
                                     borderBottom: i < logs.length - 1 ? `1px solid ${BORDER}` : 'none',
-                                    display: 'flex', alignItems: 'center', gap: 14,
                                     background: log.isError ? `${RED}06` : 'transparent'
                                 }}>
-                                    <span style={{
-                                        fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 6,
-                                        background: log.isError ? `${RED}20` : `${GREEN}20`,
-                                        color: log.isError ? RED : GREEN,
-                                        minWidth: 32, textAlign: 'center'
-                                    }}>{log.statusCode}</span>
-                                    <span style={{ color: '#818cf8', fontFamily: 'monospace', fontSize: 12, flex: 1 }}>{log.endpoint}</span>
-                                    <span style={{ color: MUTED, fontSize: 11 }}>{log.tokensUsed ? `${log.tokensUsed} tok` : ''}</span>
-                                    <span style={{ color: log.latencyMs > 3000 ? AMBER : MUTED, fontSize: 11 }}>{log.latencyMs}ms</span>
-                                    <span style={{ color: MUTED, fontSize: 11 }}>{new Date(log.createdAt).toLocaleTimeString()}</span>
+                                    <div className="flex items-center gap-3.5 flex-1 min-w-0">
+                                        <span style={{
+                                            fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 6,
+                                            background: log.isError ? `${RED}20` : `${GREEN}20`,
+                                            color: log.isError ? RED : GREEN,
+                                            minWidth: 32, textAlign: 'center'
+                                        }}>{log.statusCode}</span>
+                                        <span className="truncate" style={{ color: '#818cf8', fontFamily: 'monospace', fontSize: 12 }}>{log.endpoint}</span>
+                                    </div>
+                                    <div className="flex items-center gap-4 text-xs" style={{ color: MUTED }}>
+                                        {log.tokensUsed ? <span>{log.tokensUsed} tok</span> : null}
+                                        <span style={{ color: log.latencyMs > 3000 ? AMBER : undefined }}>{log.latencyMs}ms</span>
+                                        <span>{new Date(log.createdAt).toLocaleTimeString()}</span>
+                                    </div>
                                 </div>
                             ))}
                             {logs.length === 0 && (
