@@ -44,6 +44,22 @@ While matching against our curated 6-8 core skills provides an excellent foundat
    cd server && npm install
    cd ../Dreamrole && npm install
    ```
-3. Set up environment variables in `server/.env` (You will need a Gemini API key)
+3. Set up environment variables in `server/.env` (You will need MongoDB, Firebase, and Gemini/OpenAI API keys)
 4. Start the backend: `npm run dev` in the `server` directory
 5. Start the frontend: `npm run dev` in the `Dreamrole` directory
+
+## Deployment
+
+### Backend (Vercel)
+The backend is configured to be deployed as a Serverless Function on **Vercel**:
+1. Sign up on [Vercel](https://vercel.com) using your GitHub account.
+2. Import this repository.
+3. Set the **Root Directory** to `server`.
+4. Copy all environment variables from `server/.env` to the Vercel project configuration.
+5. Click **Deploy**.
+
+### Frontend (Netlify)
+The frontend is configured to be deployed on **Netlify**:
+1. Set `VITE_API_URL` in Netlify build settings to your deployed Vercel backend URL (e.g. `https://your-backend.vercel.app`).
+2. Deploy the `Dreamrole` directory.
+
