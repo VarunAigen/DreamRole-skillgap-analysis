@@ -265,9 +265,13 @@ function getFirebaseError(code) {
     'auth/weak-password': 'Password must be at least 6 characters.',
     'auth/invalid-email': 'Please enter a valid email address.',
     'auth/popup-closed-by-user': 'Google sign-in was cancelled.',
+    'auth/popup-blocked': 'Popup was blocked by your browser. Please allow popups for this site.',
     'auth/too-many-requests': 'Too many failed attempts. Please wait a moment.',
     'auth/invalid-credential': 'Incorrect email or password.',
     'auth/network-request-failed': 'Network error. Check your connection.',
+    'auth/unauthorized-domain': 'This domain is not authorized for Google Sign-In. Please contact the site administrator.',
+    'auth/internal-error': 'An internal error occurred. Please try again.',
+    'auth/cancelled-popup-request': 'Google sign-in was cancelled.',
   }
-  return map[code] || 'Something went wrong. Please try again.'
+  return map[code] || `Something went wrong (${code || 'unknown'}). Please try again.`
 }

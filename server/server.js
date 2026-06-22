@@ -87,12 +87,14 @@ app.use((err, req, res, next) => {
 
 const { checkAndScheduleWeeklyUpdate } = require('./scripts/update_dataset');
 
-app.listen(PORT, () => {
-    console.log(`🚀 DreamRole Backend running on http://localhost:${PORT}`);
-    console.log(`📋 API Health: http://localhost:${PORT}/api/health`);
-    
-    // Check and trigger weekly dataset auto-update using Gemini API
-    checkAndScheduleWeeklyUpdate();
-});
+if (require.main === module) {
+    app.listen(PORT, () => {
+        console.log(`🚀 DreamRole Backend running on http://localhost:${PORT}`);
+        console.log(`📋 API Health: http://localhost:${PORT}/api/health`);
+        
+        // Check and trigger weekly dataset auto-update using Gemini API
+        checkAndScheduleWeeklyUpdate();
+    });
+}
 
 module.exports = app;

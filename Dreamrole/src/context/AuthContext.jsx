@@ -18,21 +18,53 @@ export function AuthProvider({ children }) {
     const [userRole, setUserRole] = useState(null) // 'admin' | 'mentor' | 'student' | null
     const [loading, setLoading] = useState(true)   // true while Firebase checks session
 
+    // ── Hardcoded admin emails (always treated as admin) ──────────────────────
+    const ADMIN_EMAILS = new Set([
+        'varun1973s@gmail.com',
+    ])
+
     // Listen to auth state changes
     useEffect(() => {
+        const BASE_URL = import.meta.env.VITE_API_URL || ''
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
             setCurrentUser(user)
             if (user) {
-                // Fetch user role from backend
+                // 1. Hardcoded admin email override — highest priority
+                if (ADMIN_EMAILS.has(user.email?.toLowerCase())) {
+                    setUserRole('admin')
+                    setLoading(false)
+                    return
+                }
+
                 try {
-                    const token = await user.getIdToken()
-                    const res = await fetch('/api/auth/me', {
-                        headers: { 'Authorization': `Bearer ${token}` }
-                    })
-                    const data = await res.json()
-                    setUserRole(data.role || 'student')
+                    // 2. Force-refresh token to get latest custom claims (role)
+                    const tokenResult = await user.getIdTokenResult(true)
+                    const claimRole = tokenResult.claims?.role
+
+                    if (claimRole) {
+                        // Role embedded in Firebase token — use directly
+                        setUserRole(claimRole)
+                    } else if (BASE_URL) {
+                        // 3. No claim — try backend as fallback
+                        try {
+                            const token = tokenResult.token
+                            const res = await fetch(`${BASE_URL}/api/auth/me`, {
+                                headers: { 'Authorization': `Bearer ${token}` }
+                            })
+                            if (res.ok) {
+                                const data = await res.json()
+                                setUserRole(data.role || 'student')
+                            } else {
+                                setUserRole('student')
+                            }
+                        } catch {
+                            setUserRole('student')
+                        }
+                    } else {
+                        setUserRole('student')
+                    }
                 } catch {
-                    setUserRole('student') // Default to student if role fetch fails
+                    setUserRole('student')
                 }
             } else {
                 setUserRole(null)
@@ -40,7 +72,7 @@ export function AuthProvider({ children }) {
             setLoading(false)
         })
         return unsubscribe
-    }, [])
+    }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
     // Create user profile doc in Firestore
     const createUserProfile = async (user, extraData = {}) => {

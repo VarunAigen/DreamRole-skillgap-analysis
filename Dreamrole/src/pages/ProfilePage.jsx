@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useApp } from '../context/AppContext'
 import { authFetch } from '../lib/api'
 import {
     User, Mail, Shield, Target, FileText, Trash2, Award, CheckCircle2,
-    RefreshCw, Plus, Edit2, Check, X, GraduationCap, Briefcase, ExternalLink, Loader
+    RefreshCw, Plus, Edit2, Check, X, GraduationCap, Briefcase, ExternalLink, Loader, LogOut
 } from 'lucide-react'
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
@@ -17,7 +18,8 @@ const GREEN = '#22c55e'
 const RED = '#ef4444'
 
 export default function ProfilePage() {
-    const { currentUser, userRole } = useAuth()
+    const { currentUser, userRole, logout } = useAuth()
+    const navigate = useNavigate()
     const {
         resumeText,
         extractedSkills,
@@ -281,7 +283,7 @@ export default function ProfilePage() {
                                 <Mail size={12} /> {currentUser?.email || 'N/A'}
                             </p>
                             <p style={{ fontSize: 12, color: MUTED, margin: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
-                                <Shield size={12} /> Role claims: <span style={{
+                                <Shield size={12} /> Role: <span style={{
                                     fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20,
                                     background: userRole === 'admin' ? 'rgba(239,68,68,0.15)' : userRole === 'mentor' ? 'rgba(168,85,247,0.15)' : 'rgba(99,102,241,0.15)',
                                     color: userRole === 'admin' ? '#f87171' : userRole === 'mentor' ? '#c084fc' : '#818cf8',
@@ -290,6 +292,24 @@ export default function ProfilePage() {
                             </p>
                         </div>
                     </div>
+                    {/* Sign Out Button */}
+                    <button
+                        onClick={async () => { await logout(); navigate('/') }}
+                        style={{
+                            display: 'flex', alignItems: 'center', gap: 6,
+                            padding: '8px 16px', borderRadius: 10,
+                            background: 'rgba(239,68,68,0.08)',
+                            border: '1px solid rgba(239,68,68,0.2)',
+                            color: '#f87171', fontSize: 12, fontWeight: 600,
+                            cursor: 'pointer', flexShrink: 0,
+                            transition: 'all 0.2s'
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.15)'; e.currentTarget.style.borderColor = 'rgba(239,68,68,0.35)' }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.08)'; e.currentTarget.style.borderColor = 'rgba(239,68,68,0.2)' }}
+                    >
+                        <LogOut size={14} />
+                        Sign Out
+                    </button>
                 </div>
 
                 {/* 👑 ADMIN SPECIFIC PROFILE */}
