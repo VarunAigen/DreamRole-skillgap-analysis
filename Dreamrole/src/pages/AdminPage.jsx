@@ -132,6 +132,20 @@ export default function AdminPage() {
                 authFetch('/api/admin/api-usage?days=7'),
                 authFetch('/api/admin/logs')
             ])
+
+            if (!statsRes.ok) {
+                const statsData = await statsRes.json().catch(() => ({}));
+                throw new Error(statsData.error || `Stats request failed (${statsRes.status})`);
+            }
+            if (!usageRes.ok) {
+                const usageData = await usageRes.json().catch(() => ({}));
+                throw new Error(usageData.error || `API usage request failed (${usageRes.status})`);
+            }
+            if (!logsRes.ok) {
+                const logsData = await logsRes.json().catch(() => ({}));
+                throw new Error(logsData.error || `Logs request failed (${logsRes.status})`);
+            }
+
             const [statsData, usageData, logsData] = await Promise.all([
                 statsRes.json(), usageRes.json(), logsRes.json()
             ])
@@ -150,9 +164,13 @@ export default function AdminPage() {
         try {
             const res = await authFetch('/api/admin/users')
             const data = await res.json()
+            if (!res.ok) {
+                throw new Error(data.error || `Users request failed (${res.status})`);
+            }
             if (data.success) setUsers(data.users || [])
         } catch (err) {
             console.error('Users fetch error:', err.message)
+            setError(prev => prev ? prev + ' | ' + err.message : 'Failed to load users: ' + err.message)
         } finally {
             setUsersLoading(false)
         }
@@ -163,9 +181,13 @@ export default function AdminPage() {
         try {
             const res = await authFetch('/api/admin/mentors')
             const data = await res.json()
+            if (!res.ok) {
+                throw new Error(data.error || `Mentors request failed (${res.status})`);
+            }
             if (data.success) setMentors(data.mentors || [])
         } catch (err) {
             console.error('Mentors fetch error:', err.message)
+            setError(prev => prev ? prev + ' | ' + err.message : 'Failed to load mentors: ' + err.message)
         } finally {
             setMentorsLoading(false)
         }
