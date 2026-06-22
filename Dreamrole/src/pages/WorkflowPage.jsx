@@ -332,7 +332,7 @@ function StepGap({ goNext, goBack }) {
     )
   }
 
-  const { matched_skills, missing_skills, alignment_stage, feedback } = analysisResult
+  const { matched_skills = [], missing_skills = [], alignment_stage = 'Developing Stage', feedback = '' } = analysisResult
   const badgeClass = {
     'Foundation Stage': 'bg-amber-500/10 text-amber-400 border border-amber-500/20',
     'Developing Stage': 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20',
@@ -352,15 +352,15 @@ function StepGap({ goNext, goBack }) {
 
         <div className="grid grid-cols-3 gap-4 text-center mt-4">
           <div className="p-3 bg-transparent rounded-xl shadow-sm border border-white/[0.06]">
-            <p className="text-2xl font-bold text-emerald-400">{matched_skills.length}</p>
+            <p className="text-2xl font-bold text-emerald-400">{matched_skills?.length || 0}</p>
             <p className="text-xs text-white/40 mt-1">Matched</p>
           </div>
           <div className="p-3 bg-transparent rounded-xl shadow-sm border border-white/[0.06]">
-            <p className="text-2xl font-bold text-red-400">{missing_skills.length}</p>
+            <p className="text-2xl font-bold text-red-400">{missing_skills?.length || 0}</p>
             <p className="text-xs text-white/40 mt-1">Missing</p>
           </div>
           <div className="p-3 bg-transparent rounded-xl shadow-sm border border-white/[0.06]">
-            <p className="text-2xl font-bold text-white/80">{analysisResult.total_required}</p>
+            <p className="text-2xl font-bold text-white/80">{analysisResult.total_required || 0}</p>
             <p className="text-xs text-white/40 mt-1">Required</p>
           </div>
         </div>
@@ -369,10 +369,10 @@ function StepGap({ goNext, goBack }) {
       {/* Categorized Skill Breakdown */}
       <div className="space-y-4">
         <h3 className="font-bold text-white/90 text-sm mb-3">Detailed Skill Breakdown</h3>
-        {analysisResult.category_breakdown ? (
+        {analysisResult.category_breakdown && Object.keys(analysisResult.category_breakdown).length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {Object.entries(analysisResult.category_breakdown).map(([catKey, data]) => {
-              if (data.total === 0) return null;
+              if (!data || data.total === 0) return null;
               
               const catLabels = {
                 core_skills: "Core Skills",
@@ -390,27 +390,27 @@ function StepGap({ goNext, goBack }) {
                 <div key={catKey} className="card p-4 space-y-3 shadow-sm bg-white/[0.01]">
                   <div className="flex justify-between items-center mb-1">
                     <h3 className="font-bold text-white/80 text-sm">{label}</h3>
-                    <span className="text-xs font-semibold text-white/40">{data.matched} / {data.total}</span>
+                    <span className="text-xs font-semibold text-white/40">{data.matched || 0} / {data.total || 0}</span>
                   </div>
                   
                   <div className="w-full rounded-full h-1 bg-white/5">
-                    <div className="bg-indigo-500 h-1 rounded-full" style={{ width: `${data.percentage}%` }}></div>
+                    <div className="bg-indigo-500 h-1 rounded-full" style={{ width: `${data.percentage || 0}%` }}></div>
                   </div>
                   
                   <div className="space-y-1.5 mt-2">
-                    {data.matched_skills.length > 0 && (
+                    {data.matched_skills && data.matched_skills.length > 0 && (
                       <div className="flex flex-wrap gap-1">
                         {data.matched_skills.map((s, i) => (
-                          <span key={i} className="px-1.5 py-0.5 rounded border border-emerald-500/20 text-emerald-400 text-[10px] font-medium flex items-center gap-1 bg-emerald-500/10">
+                          <span key={`match-${i}`} className="px-1.5 py-0.5 rounded border border-emerald-500/20 text-emerald-400 text-[10px] font-medium flex items-center gap-1 bg-emerald-500/10">
                             <CheckCircle2 size={8} /> {s}
                           </span>
                         ))}
                       </div>
                     )}
-                    {data.missing_skills.length > 0 && (
+                    {data.missing_skills && data.missing_skills.length > 0 && (
                       <div className="flex flex-wrap gap-1">
                         {data.missing_skills.map((s, i) => (
-                          <span key={i} className="px-1.5 py-0.5 rounded border border-red-500/20 text-red-400 text-[10px] font-medium flex items-center gap-1 bg-red-500/10">
+                          <span key={`miss-${i}`} className="px-1.5 py-0.5 rounded border border-red-500/20 text-red-400 text-[10px] font-medium flex items-center gap-1 bg-red-500/10">
                             <X size={8} /> {s}
                           </span>
                         ))}

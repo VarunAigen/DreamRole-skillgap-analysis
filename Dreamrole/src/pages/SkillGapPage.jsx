@@ -101,7 +101,7 @@ export default function SkillGapPage() {
 
   if (!analysisResult) return null
 
-  const { matched_skills, missing_skills, alignment_stage, feedback, weak_areas, resume_improvements } = analysisResult
+  const { matched_skills = [], missing_skills = [], alignment_stage = 'Developing Stage', feedback = '', weak_areas = [], resume_improvements = [] } = analysisResult
 
   const stageColors = {
     'Foundation Stage': 'bg-amber-100 text-amber-800',
@@ -131,15 +131,15 @@ export default function SkillGapPage() {
         </div>
         <div className="grid grid-cols-3 gap-4 text-center mt-2">
           <div className="p-3 bg-transparent rounded-xl border border-white/[0.06]">
-            <p className="text-xl font-bold text-emerald-400">{matched_skills.length}</p>
+            <p className="text-xl font-bold text-emerald-400">{matched_skills?.length || 0}</p>
             <p className="text-xs text-white/40 mt-0.5">Matched</p>
           </div>
           <div className="p-3 bg-transparent rounded-xl border border-white/[0.06]">
-            <p className="text-xl font-bold text-red-400">{missing_skills.length}</p>
+            <p className="text-xl font-bold text-red-400">{missing_skills?.length || 0}</p>
             <p className="text-xs text-white/40 mt-0.5">Missing</p>
           </div>
           <div className="p-3 bg-transparent rounded-xl border border-white/[0.06]">
-            <p className="text-xl font-bold text-white/80">{analysisResult.total_required}</p>
+            <p className="text-xl font-bold text-white/80">{analysisResult.total_required || 0}</p>
             <p className="text-xs text-white/40 mt-0.5">Required Total</p>
           </div>
         </div>
@@ -185,10 +185,10 @@ export default function SkillGapPage() {
       {/* Categorized Skill Breakdown */}
       <div className="space-y-4">
         <h2 className="text-lg font-bold text-white/90">Detailed Skill Breakdown</h2>
-        {analysisResult.category_breakdown ? (
+        {analysisResult.category_breakdown && Object.keys(analysisResult.category_breakdown).length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {Object.entries(analysisResult.category_breakdown).map(([catKey, data]) => {
-              if (data.total === 0) return null;
+              if (!data || data.total === 0) return null;
               
               const catLabels = {
                 core_skills: "Core Skills",
@@ -206,27 +206,27 @@ export default function SkillGapPage() {
                 <div key={catKey} className="card p-5 space-y-4">
                   <div className="flex justify-between items-center mb-1">
                     <h3 className="font-bold text-white/80 text-sm">{label}</h3>
-                    <span className="text-xs font-semibold text-white/40">{data.matched} / {data.total}</span>
+                    <span className="text-xs font-semibold text-white/40">{data.matched || 0} / {data.total || 0}</span>
                   </div>
                   
                   <div className="w-full rounded-full h-1.5 bg-white/5">
-                    <div className="bg-indigo-500 h-1.5 rounded-full" style={{ width: `${data.percentage}%` }}></div>
+                    <div className="bg-indigo-500 h-1.5 rounded-full" style={{ width: `${data.percentage || 0}%` }}></div>
                   </div>
                   
                   <div className="space-y-2 mt-3">
-                    {data.matched_skills.length > 0 && (
+                    {data.matched_skills && data.matched_skills.length > 0 && (
                       <div className="flex flex-wrap gap-1.5">
                         {data.matched_skills.map((s, i) => (
-                          <span key={i} className="px-2 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] font-medium flex items-center gap-1">
+                          <span key={`match-${i}`} className="px-2 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] font-medium flex items-center gap-1">
                             <CheckCircle2 size={10} /> {s}
                           </span>
                         ))}
                       </div>
                     )}
-                    {data.missing_skills.length > 0 && (
+                    {data.missing_skills && data.missing_skills.length > 0 && (
                       <div className="flex flex-wrap gap-1.5">
                         {data.missing_skills.map((s, i) => (
-                          <span key={i} className="px-2 py-0.5 rounded-md bg-red-500/10 border border-red-500/20 text-red-400 text-[11px] font-medium flex items-center gap-1">
+                          <span key={`miss-${i}`} className="px-2 py-0.5 rounded-md bg-red-500/10 border border-red-500/20 text-red-400 text-[11px] font-medium flex items-center gap-1">
                             <X size={10} /> {s}
                           </span>
                         ))}
@@ -243,7 +243,7 @@ export default function SkillGapPage() {
               <div className="flex items-center gap-2 mb-4">
                 <CheckCircle2 size={18} className="text-emerald-500" />
                 <h3 className="font-semibold text-white/80 text-sm">Matched Skills</h3>
-                <span className="ml-auto text-xs font-bold text-emerald-400">{matched_skills.length}</span>
+                <span className="ml-auto text-xs font-bold text-emerald-400">{matched_skills?.length || 0}</span>
               </div>
               <SkillList skills={matched_skills} variant="matched" />
             </div>
@@ -251,7 +251,7 @@ export default function SkillGapPage() {
               <div className="flex items-center gap-2 mb-4">
                 <AlertCircle size={18} className="text-red-400" />
                 <h3 className="font-semibold text-white/80 text-sm">Missing Skills</h3>
-                <span className="ml-auto text-xs font-bold text-red-400">{missing_skills.length}</span>
+                <span className="ml-auto text-xs font-bold text-red-400">{missing_skills?.length || 0}</span>
               </div>
               <SkillList skills={missing_skills} variant="missing" />
             </div>
