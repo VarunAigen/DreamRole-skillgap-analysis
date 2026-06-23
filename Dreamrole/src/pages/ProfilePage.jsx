@@ -5,7 +5,7 @@ import { useApp } from '../context/AppContext'
 import { authFetch } from '../lib/api'
 import {
     User, Mail, Shield, Target, FileText, Trash2, Award, CheckCircle2,
-    RefreshCw, Plus, Edit2, Check, X, GraduationCap, Briefcase, ExternalLink, Loader, LogOut
+    RefreshCw, Plus, Edit2, Check, X, GraduationCap, Briefcase, ExternalLink, Loader, LogOut, Download
 } from 'lucide-react'
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
@@ -149,6 +149,35 @@ export default function ProfilePage() {
             } catch (error) {
                 setErr('Failed to clear data: ' + error.message)
             }
+        }
+    }
+
+    const handleDownloadResume = async () => {
+        try {
+            const res = await authFetch('/api/profile/resume/download')
+            if (!res.ok) throw new Error('No resume PDF available for download.')
+            const blob = await res.blob()
+            const url = window.URL.createObjectURL(blob)
+            const a = document.createElement('a')
+            a.href = url
+            a.download = 'resume.pdf'
+            document.body.appendChild(a)
+            a.click()
+            a.remove()
+        } catch (error) {
+            setErr(error.message)
+        }
+    }
+
+    const handleViewResume = async () => {
+        try {
+            const res = await authFetch('/api/profile/resume/download')
+            if (!res.ok) throw new Error('No resume PDF available to view.')
+            const blob = await res.blob()
+            const url = window.URL.createObjectURL(blob)
+            window.open(url, '_blank')
+        } catch (error) {
+            setErr(error.message)
         }
     }
 
@@ -658,16 +687,28 @@ export default function ProfilePage() {
                                     <FileText size={18} color="#818cf8" />
                                     <h3 style={{ fontSize: 15, fontWeight: 700, color: TEXT, margin: 0 }}>Resume & Extracted Data</h3>
                                 </div>
-                                {isEditing && resumeText && (
-                                    <button type="button" onClick={handleClearData} style={{
-                                        padding: '6px 12px', borderRadius: 8,
-                                        background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)',
-                                        color: '#f87171', fontSize: 11, fontWeight: 600, cursor: 'pointer',
-                                        display: 'flex', alignItems: 'center', gap: 4
-                                    }}>
-                                        <Trash2 size={12} /> Clear Resume Data
-                                    </button>
-                                )}
+                                <div style={{ display: 'flex', gap: 8 }}>
+                                    {resumeText && (
+                                        <button type="button" onClick={handleDownloadResume} style={{
+                                            padding: '6px 12px', borderRadius: 8,
+                                            background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.25)',
+                                            color: '#a5b4fc', fontSize: 11, fontWeight: 600, cursor: 'pointer',
+                                            display: 'flex', alignItems: 'center', gap: 4
+                                        }}>
+                                            <Download size={12} /> Download PDF
+                                        </button>
+                                    )}
+                                    {isEditing && resumeText && (
+                                        <button type="button" onClick={handleClearData} style={{
+                                            padding: '6px 12px', borderRadius: 8,
+                                            background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)',
+                                            color: '#f87171', fontSize: 11, fontWeight: 600, cursor: 'pointer',
+                                            display: 'flex', alignItems: 'center', gap: 4
+                                        }}>
+                                            <Trash2 size={12} /> Clear Resume Data
+                                        </button>
+                                    )}
+                                </div>
                             </div>
 
                             {resumeText ? (
@@ -700,16 +741,14 @@ export default function ProfilePage() {
                                     )}
 
                                     <div>
-                                        <p style={{ fontSize: 11, color: MUTED, textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700, marginBottom: 8 }}>
-                                            Resume Content Snippet
-                                        </p>
-                                        <div style={{
-                                            background: 'rgba(0,0,0,0.3)', border: `1px solid ${BORDER}`,
-                                            borderRadius: 12, padding: 14, fontSize: 12, color: 'rgba(255,255,255,0.7)',
-                                            maxHeight: 120, overflowY: 'auto', whiteSpace: 'pre-wrap', lineHeight: 1.6
+                                        <button type="button" onClick={handleViewResume} style={{
+                                            padding: '8px 16px', borderRadius: 10,
+                                            background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.25)',
+                                            color: '#a5b4fc', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                                            display: 'inline-flex', alignItems: 'center', gap: 6
                                         }}>
-                                            {resumeText}
-                                        </div>
+                                            <ExternalLink size={14} /> View Resume PDF
+                                        </button>
                                     </div>
                                 </div>
                             ) : (

@@ -27,6 +27,12 @@ export function useVoiceMetrics(active = false) {
     const lastSpeechRef = useRef(Date.now())
     const pauseThresholdMs = 2000 // 2 second silence = a pause
 
+    // Ref to track isListening value dynamically for event handlers
+    const isListeningRef = useRef(false)
+    useEffect(() => {
+        isListeningRef.current = isListening
+    }, [isListening])
+
     const isSupported = typeof window !== 'undefined' && ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)
 
     // ── Web Speech API Setup ────────────────────────────────────────────────
@@ -77,6 +83,17 @@ export function useVoiceMetrics(active = false) {
 
         recognition.onerror = (e) => {
             if (e.error !== 'no-speech') console.warn('[VoiceMetrics] Speech error:', e.error)
+            // If aborted or lost capture on Bluetooth, let onend restart it
+        }
+
+        recognition.onend = () => {
+            if (isListeningRef.current) {
+                try {
+                    recognition.start()
+                } catch (err) {
+                    // Ignore errors if recognition is already running
+                }
+            }
         }
 
         return recognition
@@ -139,22 +156,34 @@ export function useVoiceMetrics(active = false) {
         startTimeRef.current = Date.now()
         lastSpeechRef.current = Date.now()
 
+        setIsListening(true)
+        isListeningRef.current = true
+
         await startAudioAnalysis()
 
-        const recognition = setupRecognition()
-        if (recognition) {
-            recognitionRef.current = recognition
-            recognition.start()
-        }
-        setIsListening(true)
+        // Wait 800ms to allow Bluetooth audio driver to warm up and switch profiles
+        setTimeout(() => {
+            if (isListeningRef.current) {
+                const recognition = setupRecognition()
+                if (recognition) {
+                    recognitionRef.current = recognition
+                    try {
+                        recognition.start()
+                    } catch (err) {
+                        console.warn('[VoiceMetrics] Auto start recognition error:', err.message)
+                    }
+                }
+            }
+        }, 800)
     }, [isListening, setupRecognition, startAudioAnalysis])
 
     const stopListening = useCallback(() => {
+        isListeningRef.current = false
+        setIsListening(false)
         recognitionRef.current?.stop()
         if (volumeFrameRef.current) cancelAnimationFrame(volumeFrameRef.current)
         if (audioCtxRef.current) audioCtxRef.current.close()
         if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop())
-        setIsListening(false)
         setInterimTranscript('')
     }, [])
 

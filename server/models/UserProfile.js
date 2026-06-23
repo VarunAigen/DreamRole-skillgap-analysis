@@ -18,6 +18,9 @@ const UserProfileSchema = new mongoose.Schema({
     // Last resume data
     resume_text: { type: String, default: '' },
     extracted_skills: { type: [String], default: [] },
+    resume_pdf_data: { type: String, default: '' },
+    resume_pdf_name: { type: String, default: '' },
+    resume_pdf_mime: { type: String, default: '' },
 
     // Last analysis snapshot (lightweight summary for dashboard)
     last_alignment_stage: { type: String, default: null },

@@ -5,6 +5,7 @@ const AppContext = createContext(null)
 
 export function AppProvider({ children }) {
     const [resumeText, setResumeText] = useState('')
+    const [resumePdfName, setResumePdfName] = useState('')
     const [extractedSkills, setExtractedSkills] = useState([])
     const [selectedRole, setSelectedRole] = useState('')
     const [analysisResult, setAnalysisResult] = useState(null)
@@ -21,6 +22,7 @@ export function AppProvider({ children }) {
 
             // Restore state only if current session is empty (don't overwrite active session)
             if (!resumeText && profile.resume_text)    setResumeText(profile.resume_text)
+            if (!resumePdfName && profile.resume_pdf_name) setResumePdfName(profile.resume_pdf_name)
             if (!extractedSkills.length && profile.extracted_skills?.length)
                 setExtractedSkills(profile.extracted_skills)
             if (!selectedRole && profile.selected_role) setSelectedRole(profile.selected_role)
@@ -72,6 +74,7 @@ export function AppProvider({ children }) {
     // ── Clear session ─────────────────────────────────────────────────────────
     const clearSession = useCallback(async () => {
         setResumeText('')
+        setResumePdfName('')
         setExtractedSkills([])
         setSelectedRole('')
         setAnalysisResult(null)
@@ -86,6 +89,7 @@ export function AppProvider({ children }) {
     return (
         <AppContext.Provider value={{
             resumeText,      setResumeText: setResumeTextPersisted,
+            resumePdfName,   setResumePdfName,
             extractedSkills, setExtractedSkills: setExtractedSkillsPersisted,
             selectedRole,    setSelectedRole: setSelectedRolePersisted,
             analysisResult,  setAnalysisResult,

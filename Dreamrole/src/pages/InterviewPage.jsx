@@ -3,10 +3,11 @@ import { authFetch } from '../lib/api'
 import { useNavigate } from 'react-router-dom'
 import {
     Mic, ChevronRight, ChevronLeft, CheckCircle2, Trophy,
-    Loader, MessageSquare, Lightbulb, Star, AlertCircle, BriefcaseBusiness
+    Loader, MessageSquare, Lightbulb, Star, AlertCircle, BriefcaseBusiness, Download, FileText, Trash2, UploadCloud
 } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 import { useAuth } from '../context/AuthContext'
+import UploadBox from '../components/UploadBox'
 
 const categoryColors = {
     'Project Experience': 'bg-blue-50 text-blue-700 border-blue-200',
@@ -25,11 +26,22 @@ const stageConfig = {
 
 export default function InterviewPage() {
     const navigate = useNavigate()
-    const { resumeText, selectedRole } = useApp()
+    const { resumeText, resumePdfName, setResumeText, setResumePdfName, clearSession, selectedRole } = useApp()
     const { currentUser } = useAuth()
 
+    const [localResumeText, setLocalResumeText] = useState('')
+    const [localResumePdfName, setLocalResumePdfName] = useState('')
+    const [isSessionResume, setIsSessionResume] = useState(false)
+    const [phase, setPhase] = useState('setup') // 'setup' | 'interview'
+    const [showUploadMode, setShowUploadMode] = useState(false)
+
+    // File upload states for setup
+    const [uploadFile, setUploadFile] = useState(null)
+    const [uploading, setUploading] = useState(false)
+    const [saveToProfile, setSaveToProfile] = useState(true)
+
     const [questions, setQuestions] = useState([])
-    const [loading, setLoading] = useState(true)
+    const [loading, setLoading] = useState(false)
     const [error, setError] = useState('')
     const [current, setCurrent] = useState(0)
     const [answers, setAnswers] = useState({})        // index → typed answer
@@ -40,25 +52,90 @@ export default function InterviewPage() {
 
     const role = selectedRole || 'Software Engineer'
 
-    // Generate questions on mount
+    // Initialize local states from AppContext once loaded
     useEffect(() => {
-        if (!resumeText) {
-            setLoading(false)
-            return
+        if (resumeText && !localResumeText) {
+            setLocalResumeText(resumeText)
         }
-        authFetch('/api/interview/generate', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ resume_text: resumeText, role, count: 7, user_name: currentUser?.displayName || 'Candidate' })
-        })
-            .then(r => r.json())
-            .then(data => {
-                if (data.questions?.length > 0) setQuestions(data.questions)
-                else throw new Error('No questions generated')
+        if (resumePdfName && !localResumePdfName) {
+            setLocalResumePdfName(resumePdfName)
+        }
+    }, [resumeText, resumePdfName])
+
+    const handleStartInterview = async () => {
+        if (!localResumeText) return
+        setLoading(true)
+        setError('')
+        setPhase('interview')
+        try {
+            const res = await authFetch('/api/interview/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ resume_text: localResumeText, role, count: 7, user_name: currentUser?.displayName || 'Candidate' })
             })
-            .catch(err => setError(err.message))
-            .finally(() => setLoading(false))
-    }, [])
+            let data
+            try {
+                data = await res.json()
+            } catch (jsonErr) {
+                throw new Error(`Failed to generate questions: Server returned status ${res.status}`)
+            }
+            if (!res.ok) throw new Error(data.error || 'Failed to generate questions')
+            if (data.questions?.length > 0) {
+                setQuestions(data.questions)
+            } else {
+                throw new Error('No questions generated')
+            }
+        } catch (err) {
+            setError(err.message)
+            setPhase('setup')
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const handleUploadResume = async () => {
+        if (!uploadFile) return
+        setUploading(true)
+        setError('')
+        try {
+            const formData = new FormData()
+            formData.append('resume', uploadFile)
+            const url = saveToProfile ? '/api/resume/upload' : '/api/resume/upload?sessionOnly=true'
+            const res = await authFetch(url, { method: 'POST', body: formData })
+            let data
+            try {
+                data = await res.json()
+            } catch (jsonErr) {
+                throw new Error(`Upload failed: Server returned status ${res.status}`)
+            }
+            if (!res.ok) throw new Error(data.error || 'Upload failed')
+
+            setLocalResumeText(data.resume_text)
+            setLocalResumePdfName(data.filename)
+            setIsSessionResume(!saveToProfile)
+            setUploadFile(null)
+            setShowUploadMode(false)
+
+            if (saveToProfile) {
+                setResumeText(data.resume_text)
+                setResumePdfName(data.filename)
+            }
+        } catch (err) {
+            setError(err.message)
+        } finally {
+            setUploading(false)
+        }
+    }
+
+    const handleRemoveResume = async () => {
+        setLocalResumeText('')
+        setLocalResumePdfName('')
+        setIsSessionResume(false)
+        setUploadFile(null)
+        setShowUploadMode(false)
+        // Also clear persistent profile session
+        await clearSession()
+    }
 
     const handleEvaluate = async () => {
         const q = questions[current]
@@ -92,21 +169,24 @@ export default function InterviewPage() {
         }
     }
 
-    // ─── No resume state ─────────────────────────────────────────────────────────
-    if (!resumeText && !loading) {
-        return (
-            <div className="max-w-xl mx-auto space-y-4">
-                <h1 className="section-heading">Resume Interview Simulator</h1>
-                <div className="card text-center space-y-4">
-                    <BriefcaseBusiness size={32} className="text-white/20 mx-auto" />
-                    <p className="text-white/60">Please upload your resume first — the interview questions are generated from your actual resume content.</p>
-                    <button onClick={() => navigate('/dashboard/workflow')} className="btn-primary mx-auto">Upload Resume</button>
-                </div>
-            </div>
-        )
+    const handleDownloadResume = async () => {
+        try {
+            const res = await authFetch('/api/profile/resume/download')
+            if (!res.ok) throw new Error('No resume PDF available for download.')
+            const blob = await res.blob()
+            const url = window.URL.createObjectURL(blob)
+            const a = document.createElement('a')
+            a.href = url
+            a.download = 'resume.pdf'
+            document.body.appendChild(a)
+            a.click()
+            a.remove()
+        } catch (error) {
+            alert(error.message)
+        }
     }
 
-    // ─── Loading ─────────────────────────────────────────────────────────────────
+    // ─── Loading State ───────────────────────────────────────────────────────────
     if (loading) {
         return (
             <div className="max-w-2xl mx-auto card flex items-center gap-3 text-indigo-400">
@@ -119,12 +199,119 @@ export default function InterviewPage() {
         )
     }
 
-    // ─── Error ───────────────────────────────────────────────────────────────────
-    if (error || questions.length === 0) {
+    // ─── Setup Phase ─────────────────────────────────────────────────────────────
+    if (phase === 'setup') {
+        const hasResume = !!localResumeText
+        return (
+            <div className="max-w-xl mx-auto space-y-6">
+                <div className="text-center">
+                    <h1 className="text-2xl font-extrabold text-white">Resume Interview Simulator</h1>
+                    <p className="text-white/40 text-sm mt-1">Get custom AI interview questions based on your resume and dream role.</p>
+                </div>
+
+                {error && (
+                    <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-sm text-red-400">
+                        {error}
+                    </div>
+                )}
+
+                {hasResume && !showUploadMode ? (
+                    <div className="card space-y-6 animate-fade-in">
+                        <div className="flex items-center gap-4 p-4 rounded-xl" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                            <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-indigo-500/10 text-indigo-400">
+                                <FileText size={24} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <p className="text-xs font-semibold text-white/40 uppercase tracking-wider">Current Resume</p>
+                                <p className="text-sm font-bold text-white truncate flex items-center gap-2">
+                                    {localResumePdfName || 'Loaded Resume'}
+                                    {isSessionResume && (
+                                        <span className="text-[10px] bg-amber-500/10 text-amber-400 border border-amber-500/20 px-1.5 py-0.5 rounded font-normal">
+                                            Session Only
+                                        </span>
+                                    )}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="flex flex-col gap-2">
+                            <button onClick={handleStartInterview} className="btn-primary w-full justify-center py-3">
+                                Start Interview ({role})
+                            </button>
+                            <div className="flex gap-2">
+                                <button onClick={() => setShowUploadMode(true)} className="btn-secondary flex-1 justify-center py-2.5">
+                                    Upload New Resume
+                                </button>
+                                <button onClick={handleRemoveResume} className="btn-ghost flex-1 justify-center py-2.5 text-red-400 hover:bg-red-500/10">
+                                    <Trash2 size={16} className="mr-1.5" /> Remove Resume
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="card space-y-6 animate-fade-in">
+                        <div className="text-center">
+                            <h2 className="text-lg font-bold text-white">
+                                {hasResume ? 'Upload Replacement Resume' : 'Upload Your Resume'}
+                            </h2>
+                            <p className="text-white/40 text-xs mt-0.5">PDF format is required to generate interview questions.</p>
+                        </div>
+
+                        <UploadBox
+                            file={uploadFile}
+                            onFileAccepted={setUploadFile}
+                            onClear={() => setUploadFile(null)}
+                        />
+
+                        {uploadFile && (
+                            <div className="space-y-4">
+                                <label className="flex items-center gap-2.5 cursor-pointer text-sm text-white/70 select-none">
+                                    <input
+                                        type="checkbox"
+                                        checked={saveToProfile}
+                                        onChange={(e) => setSaveToProfile(e.target.checked)}
+                                        className="rounded border-white/[0.08] bg-transparent text-indigo-500 focus:ring-indigo-500"
+                                    />
+                                    Save to profile for future sessions
+                                </label>
+
+                                <button
+                                    onClick={handleUploadResume}
+                                    disabled={uploading}
+                                    className="btn-primary w-full justify-center py-3"
+                                >
+                                    {uploading ? (
+                                        <><Loader size={16} className="animate-spin mr-1.5" /> Extracting PDF...</>
+                                    ) : (
+                                        <><UploadCloud size={16} className="mr-1.5" /> Parse & Use Resume</>
+                                    )}
+                                </button>
+                            </div>
+                        )}
+
+                        {hasResume && (
+                            <button
+                                onClick={() => { setShowUploadMode(false); setUploadFile(null); }}
+                                className="btn-ghost w-full justify-center"
+                            >
+                                Cancel
+                            </button>
+                        )}
+                    </div>
+                )}
+            </div>
+        )
+    }
+
+    // ─── Error / Empty state check ───────────────────────────────────────────────
+    if (questions.length === 0) {
         return (
             <div className="max-w-xl mx-auto space-y-4">
                 <h1 className="section-heading">Resume Interview Simulator</h1>
-                <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-sm text-red-400">{error || 'Could not generate questions'}</div>
+                <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-sm text-red-400">
+                    No questions could be generated. Please try again or re-upload your resume.
+                </div>
+                <button onClick={() => setPhase('setup')} className="btn-primary mx-auto">Back to Setup</button>
             </div>
         )
     }
@@ -199,7 +386,16 @@ export default function InterviewPage() {
                     </h1>
                     <p className="section-sub">Question {current + 1} of {questions.length} · Based on your resume</p>
                 </div>
-                <span className="badge-brand text-xs px-3 py-1.5">{role}</span>
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={handleDownloadResume}
+                        className="btn-secondary text-xs py-1.5 px-3 flex items-center gap-1.5"
+                        style={{ display: 'flex', alignItems: 'center' }}
+                    >
+                        <Download size={13} /> My Resume
+                    </button>
+                    <span className="badge-brand text-xs px-3 py-1.5">{role}</span>
+                </div>
             </div>
 
             {/* Progress bar */}

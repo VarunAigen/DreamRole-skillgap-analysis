@@ -221,7 +221,7 @@ router.get('/mentee/:uid', requireMentor, async (req, res) => {
 });
 
 // ── GET /api/mentor/mentee/:uid/resume ───────────────────────────────────────
-// Download student's resume as plain text attachment
+// Download student's resume as plain text or PDF attachment
 router.get('/mentee/:uid/resume', requireMentor, async (req, res) => {
     try {
         const link = await MentorLink.findOne({
@@ -234,13 +234,23 @@ router.get('/mentee/:uid/resume', requireMentor, async (req, res) => {
         }
 
         const profile = await UserProfile.findOne({ uid: req.params.uid }).lean();
-        if (!profile || !profile.resume_text) {
-            return res.status(404).json({ error: 'No resume text available for download.' });
+        if (!profile) {
+            return res.status(404).json({ error: 'No profile found for this student.' });
         }
 
-        res.setHeader('Content-Type', 'text/plain');
-        res.setHeader('Content-Disposition', `attachment; filename=resume_${req.params.uid}.txt`);
-        res.send(profile.resume_text);
+        if (profile.resume_pdf_data) {
+            const pdfBuffer = Buffer.from(profile.resume_pdf_data, 'base64');
+            res.setHeader('Content-Type', profile.resume_pdf_mime || 'application/pdf');
+            const filename = profile.resume_pdf_name || `resume_${req.params.uid}.pdf`;
+            res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+            return res.send(pdfBuffer);
+        } else if (profile.resume_text) {
+            res.setHeader('Content-Type', 'text/plain');
+            res.setHeader('Content-Disposition', `attachment; filename=resume_${req.params.uid}.txt`);
+            return res.send(profile.resume_text);
+        } else {
+            return res.status(404).json({ error: 'No resume available for download.' });
+        }
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

@@ -5,12 +5,13 @@ import {
     Video, Mic, MicOff, VideoOff, ChevronRight, ChevronLeft,
     Trophy, Loader, Loader2, AlertCircle, CheckCircle2, Brain,
     Volume2, Activity, Clock, BarChart3, Lightbulb, Star,
-    ArrowRight, Play, Square, Camera
+    ArrowRight, Play, Square, Camera, Download, FileText, Trash2, UploadCloud
 } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 import { useAuth } from '../context/AuthContext'
 import { useEmotionDetection } from '../hooks/useEmotionDetection'
 import { useVoiceMetrics } from '../hooks/useVoiceMetrics'
+import UploadBox from '../components/UploadBox'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const stageConfig = {
@@ -173,7 +174,7 @@ function AIInterviewerPanel({ question, isReading, onReadQuestion }) {
 // ── Main Component ─────────────────────────────────────────────────────────────
 export default function VideoInterviewPage() {
     const navigate = useNavigate()
-    const { resumeText, selectedRole } = useApp()
+    const { resumeText, resumePdfName, setResumeText, setResumePdfName, clearSession, selectedRole } = useApp()
     const { currentUser } = useAuth()
 
     const role = selectedRole || 'Software Engineer'
@@ -194,6 +195,71 @@ export default function VideoInterviewPage() {
     const [sessionSaved, setSessionSaved] = useState(false)
     const [error, setError] = useState('')
     const [showEmptyWarning, setShowEmptyWarning] = useState(false)
+
+    // Local resume states
+    const [localResumeText, setLocalResumeText] = useState('')
+    const [localResumePdfName, setLocalResumePdfName] = useState('')
+    const [isSessionResume, setIsSessionResume] = useState(false)
+    const [showUploadMode, setShowUploadMode] = useState(false)
+
+    // File upload states for setup
+    const [uploadFile, setUploadFile] = useState(null)
+    const [uploading, setUploading] = useState(false)
+    const [saveToProfile, setSaveToProfile] = useState(true)
+
+    // Initialize local states from AppContext once loaded
+    useEffect(() => {
+        if (resumeText && !localResumeText) {
+            setLocalResumeText(resumeText)
+        }
+        if (resumePdfName && !localResumePdfName) {
+            setLocalResumePdfName(resumePdfName)
+        }
+    }, [resumeText, resumePdfName])
+
+    const handleUploadResume = async () => {
+        if (!uploadFile) return
+        setUploading(true)
+        setError('')
+        try {
+            const formData = new FormData()
+            formData.append('resume', uploadFile)
+            const url = saveToProfile ? '/api/resume/upload' : '/api/resume/upload?sessionOnly=true'
+            const res = await authFetch(url, { method: 'POST', body: formData })
+            let data
+            try {
+                data = await res.json()
+            } catch (jsonErr) {
+                throw new Error(`Upload failed: Server returned status ${res.status}`)
+            }
+            if (!res.ok) throw new Error(data.error || 'Upload failed')
+
+            setLocalResumeText(data.resume_text)
+            setLocalResumePdfName(data.filename)
+            setIsSessionResume(!saveToProfile)
+            setUploadFile(null)
+            setShowUploadMode(false)
+
+            if (saveToProfile) {
+                setResumeText(data.resume_text)
+                setResumePdfName(data.filename)
+            }
+        } catch (err) {
+            setError(err.message)
+        } finally {
+            setUploading(false)
+        }
+    }
+
+    const handleRemoveResume = async () => {
+        setLocalResumeText('')
+        setLocalResumePdfName('')
+        setIsSessionResume(false)
+        setUploadFile(null)
+        setShowUploadMode(false)
+        // Also clear persistent profile session
+        await clearSession()
+    }
 
     // Track emotion per question for evaluation context
     const emotionPerQuestionRef = useRef({})
@@ -236,16 +302,22 @@ export default function VideoInterviewPage() {
 
     // ── Fetch Questions ───────────────────────────────────────────────────────
     const fetchQuestions = async () => {
-        if (!resumeText) { setError('Please upload your resume first.'); return }
+        if (!localResumeText) { setError('Please upload your resume first.'); return }
         setLoadingQ(true)
         setError('')
         try {
             const res = await authFetch('/api/interview/generate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ resume_text: resumeText, role, count: 7, user_name: userName })
+                body: JSON.stringify({ resume_text: localResumeText, role, count: 7, user_name: userName })
             })
-            const data = await res.json()
+            let data
+            try {
+                data = await res.json()
+            } catch (jsonErr) {
+                throw new Error(`Failed to generate questions: Server returned status ${res.status}`)
+            }
+            if (!res.ok) throw new Error(data.error || 'Failed to generate questions')
             if (data.questions?.length > 0) {
                 setQuestions(data.questions)
                 setPhase('interview')
@@ -403,19 +475,48 @@ export default function VideoInterviewPage() {
         }
     }
 
+    const handleDownloadResume = async () => {
+        try {
+            const res = await authFetch('/api/profile/resume/download')
+            if (!res.ok) throw new Error('No resume PDF available for download.')
+            const blob = await res.blob()
+            const url = window.URL.createObjectURL(blob)
+            const a = document.createElement('a')
+            a.href = url
+            a.download = 'resume.pdf'
+            document.body.appendChild(a)
+            a.click()
+            a.remove()
+        } catch (error) {
+            alert(error.message)
+        }
+    }
+
     // ─────────────────────────────────────────────────────────────────────────
     // RENDER: Setup Phase
     // ─────────────────────────────────────────────────────────────────────────
     if (phase === 'setup') {
+        const hasResume = !!localResumeText
         return (
             <div style={{ maxWidth: 680, margin: '0 auto', fontFamily: 'inherit' }}>
-                <div style={{ marginBottom: 28 }}>
-                    <h1 style={{ fontSize: 28, fontWeight: 800, color: '#f1f5f9', margin: '0 0 6px' }}>
-                        🎥 Video Interview Simulator
-                    </h1>
-                    <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: 14, margin: 0 }}>
-                        AI-powered live interview · Emotion Detection · Voice Confidence Analysis
-                    </p>
+                <div style={{ marginBottom: 28, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div>
+                        <h1 style={{ fontSize: 28, fontWeight: 800, color: '#f1f5f9', margin: '0 0 6px' }}>
+                            🎥 Video Interview Simulator
+                        </h1>
+                        <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: 14, margin: 0 }}>
+                            AI-powered live interview · Emotion Detection · Voice Confidence Analysis
+                        </p>
+                    </div>
+                    {localResumeText && (
+                        <button
+                            onClick={handleDownloadResume}
+                            className="btn-secondary text-xs py-1.5 px-3 flex items-center gap-1.5"
+                            style={{ display: 'flex', alignItems: 'center', marginTop: 6 }}
+                        >
+                            <Download size={13} /> My Resume
+                        </button>
+                    )}
                 </div>
 
                 {/* Info cards */}
@@ -479,38 +580,113 @@ export default function VideoInterviewPage() {
                     </div>
                 </div>
 
-                {/* No resume warning */}
-                {!resumeText && (
-                    <div style={{
-                        background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)',
-                        borderRadius: 14, padding: '14px 18px', marginBottom: 20,
-                        display: 'flex', alignItems: 'center', gap: 10
-                    }}>
-                        <AlertCircle size={16} color="#ef4444" />
-                        <p style={{ color: '#fca5a5', fontSize: 13, margin: 0 }}>
-                            Resume not uploaded. Questions will be generic — for best results, upload your resume first.
-                        </p>
-                    </div>
-                )}
-
                 {error && (
                     <div style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 12, padding: 14, marginBottom: 16 }}>
                         <p style={{ color: '#fca5a5', margin: 0, fontSize: 13 }}>{error}</p>
                     </div>
                 )}
 
-                <button onClick={fetchQuestions} disabled={loadingQ} style={{
-                    width: '100%', padding: '16px 24px', borderRadius: 16,
-                    background: loadingQ ? 'rgba(255,255,255,0.06)' : 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
-                    border: 'none', color: '#fff', fontSize: 16, fontWeight: 700,
-                    cursor: loadingQ ? 'not-allowed' : 'pointer',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
-                    boxShadow: loadingQ ? 'none' : '0 8px 32px rgba(99,102,241,0.4)',
-                    transition: 'all 0.2s'
-                }}>
-                    {loadingQ ? <><Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} /> Preparing Interview...</>
-                        : <><Play size={18} /> Start Video Interview · {role}</>}
-                </button>
+                {hasResume && !showUploadMode ? (
+                    <div className="card space-y-5 animate-fade-in" style={{ padding: 24, borderRadius: 20, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', marginBottom: 24 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: 16, borderRadius: 14, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                            <div style={{ width: 44, height: 44, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(99,102,241,0.1)', color: '#818cf8' }}>
+                                <FileText size={22} />
+                            </div>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                                <p style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', margin: 0 }}>Selected Resume</p>
+                                <p style={{ fontSize: 14, fontWeight: 700, color: '#fff', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 6 }}>
+                                    {localResumePdfName || 'Loaded Resume'}
+                                    {isSessionResume && (
+                                        <span style={{ fontSize: 9, background: 'rgba(245,158,11,0.12)', color: '#fbbf24', border: '1px solid rgba(245,158,11,0.2)', padding: '2px 6px', borderRadius: 4, fontWeight: 400 }}>
+                                            Session Only
+                                        </span>
+                                    )}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                            <button onClick={fetchQuestions} disabled={loadingQ} style={{
+                                width: '100%', padding: '16px 24px', borderRadius: 14,
+                                background: loadingQ ? 'rgba(255,255,255,0.06)' : 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
+                                border: 'none', color: '#fff', fontSize: 15, fontWeight: 700,
+                                cursor: loadingQ ? 'not-allowed' : 'pointer',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                                boxShadow: loadingQ ? 'none' : '0 8px 24px rgba(99,102,241,0.35)'
+                            }}>
+                                {loadingQ ? <><Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> Preparing Interview...</>
+                                    : <><Play size={16} /> Start Video Interview · {role}</>}
+                            </button>
+
+                            <div style={{ display: 'flex', gap: 10 }}>
+                                <button onClick={() => setShowUploadMode(true)} className="btn-secondary" style={{ flex: 1, padding: '10px 16px', borderRadius: 12, justifyContent: 'center', fontSize: 13 }}>
+                                    Upload New Resume
+                                </button>
+                                <button onClick={handleRemoveResume} className="btn-ghost" style={{ flex: 1, padding: '10px 16px', borderRadius: 12, justifyContent: 'center', color: '#f87171', fontSize: 13 }}>
+                                    <Trash2 size={14} style={{ marginRight: 6 }} /> Remove Resume
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="card space-y-5 animate-fade-in" style={{ padding: 24, borderRadius: 20, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', marginBottom: 24 }}>
+                        <div style={{ textAlign: 'center', marginBottom: 12 }}>
+                            <h2 style={{ fontSize: 16, fontWeight: 700, color: '#fff', margin: 0 }}>
+                                {hasResume ? 'Upload Replacement Resume' : 'Upload Your Resume'}
+                            </h2>
+                            <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', margin: '4px 0 0' }}>
+                                A PDF resume is required to generate custom mock interview questions.
+                            </p>
+                        </div>
+
+                        <UploadBox
+                            file={uploadFile}
+                            onFileAccepted={setUploadFile}
+                            onClear={() => setUploadFile(null)}
+                        />
+
+                        {uploadFile && (
+                            <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: 'rgba(255,255,255,0.7)', userSelect: 'none' }}>
+                                    <input
+                                        type="checkbox"
+                                        checked={saveToProfile}
+                                        onChange={(e) => setSaveToProfile(e.target.checked)}
+                                        style={{ accentColor: '#6366f1' }}
+                                    />
+                                    Save to profile for future sessions
+                                </label>
+
+                                <button
+                                    onClick={handleUploadResume}
+                                    disabled={uploading}
+                                    style={{
+                                        width: '100%', padding: '12px 20px', borderRadius: 12,
+                                        background: '#6366f1', border: 'none', color: '#fff', fontSize: 14, fontWeight: 600,
+                                        cursor: uploading ? 'not-allowed' : 'pointer',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8
+                                    }}
+                                >
+                                    {uploading ? (
+                                        <><Loader2 size={15} style={{ animation: 'spin 1s linear infinite' }} /> Parsing PDF...</>
+                                    ) : (
+                                        <><UploadCloud size={15} /> Parse & Use Resume</>
+                                    )}
+                                </button>
+                            </div>
+                        )}
+
+                        {hasResume && (
+                            <button
+                                onClick={() => { setShowUploadMode(false); setUploadFile(null); }}
+                                className="btn-ghost"
+                                style={{ width: '100%', padding: '10px 16px', borderRadius: 12, justifyContent: 'center', fontSize: 13, marginTop: 8 }}
+                            >
+                                Cancel
+                            </button>
+                        )}
+                    </div>
+                )}
 
                 <p style={{ textAlign: 'center', color: 'rgba(255,255,255,0.25)', fontSize: 11, marginTop: 12 }}>
                     Camera and microphone permissions required · Works best in Chrome
@@ -763,15 +939,26 @@ export default function VideoInterviewPage() {
                         Question {current + 1} of {questions.length} · {role}
                     </p>
                 </div>
-                {/* Progress dots */}
-                <div style={{ display: 'flex', gap: 6 }}>
-                    {questions.map((_, i) => (
-                        <div key={i} style={{
-                            width: i === current ? 24 : 8, height: 8, borderRadius: 4,
-                            background: i < current ? '#22c55e' : i === current ? '#818cf8' : 'rgba(255,255,255,0.1)',
-                            transition: 'all 0.3s'
-                        }} />
-                    ))}
+                {/* Progress dots & Resume */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                    {resumeText && (
+                        <button
+                            onClick={handleDownloadResume}
+                            className="btn-secondary text-xs py-1.5 px-3 flex items-center gap-1.5"
+                            style={{ display: 'flex', alignItems: 'center' }}
+                        >
+                            <Download size={13} /> My Resume
+                        </button>
+                    )}
+                    <div style={{ display: 'flex', gap: 6 }}>
+                        {questions.map((_, i) => (
+                            <div key={i} style={{
+                                width: i === current ? 24 : 8, height: 8, borderRadius: 4,
+                                background: i < current ? '#22c55e' : i === current ? '#818cf8' : 'rgba(255,255,255,0.1)',
+                                transition: 'all 0.3s'
+                            }} />
+                        ))}
+                    </div>
                 </div>
             </div>
 

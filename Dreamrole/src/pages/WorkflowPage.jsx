@@ -19,7 +19,7 @@ const STEPS = [
 export default function WorkflowPage() {
   const [currentStep, setCurrentStep] = useState(0)
   const [completedSteps, setCompletedSteps] = useState([])
-  const { resumeText, setResumeText, extractedSkills, setExtractedSkills, selectedRole, setSelectedRole, analysisResult, setAnalysisResult } = useApp()
+  const { resumeText, setResumeText, resumePdfName, setResumePdfName, extractedSkills, setExtractedSkills, selectedRole, setSelectedRole, analysisResult, setAnalysisResult } = useApp()
   const { currentUser } = useAuth()
   const navigate = useNavigate()
 
@@ -81,7 +81,7 @@ export default function WorkflowPage() {
 
       {/* Step Content Content */}
       <div className="min-h-[400px]">
-        {currentStep === 0 && <StepUpload goNext={goNext} setResumeText={setResumeText} setExtractedSkills={setExtractedSkills} extractedSkills={extractedSkills} />}
+        {currentStep === 0 && <StepUpload goNext={goNext} setResumeText={setResumeText} setResumePdfName={setResumePdfName} setExtractedSkills={setExtractedSkills} extractedSkills={extractedSkills} />}
         {currentStep === 1 && <StepRole goNext={goNext} selectedRole={selectedRole} setSelectedRole={setSelectedRole} goBack={goBack} />}
         {currentStep === 2 && <StepExtraction goNext={goNext} extractedSkills={extractedSkills} goBack={goBack} />}
         {currentStep === 3 && <StepGap goNext={goNext} goBack={goBack} />}
@@ -92,7 +92,7 @@ export default function WorkflowPage() {
 }
 
 // ==================== STEP 1 ====================
-function StepUpload({ goNext, setResumeText, setExtractedSkills, extractedSkills }) {
+function StepUpload({ goNext, setResumeText, setResumePdfName, setExtractedSkills, extractedSkills }) {
   const [file, setFile] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -108,6 +108,7 @@ function StepUpload({ goNext, setResumeText, setExtractedSkills, extractedSkills
       const uploadData = await uploadRes.json()
       if (!uploadRes.ok) throw new Error(uploadData.error || 'Upload failed')
       setResumeText(uploadData.resume_text)
+      setResumePdfName(uploadData.filename)
 
       const skillRes = await authFetch('/api/skills/extract', {
         method: 'POST',

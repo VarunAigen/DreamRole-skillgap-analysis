@@ -10,7 +10,7 @@ export default function ResumeUploadPage() {
   const [file, setFile] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const { resumeText, setResumeText, extractedSkills, setExtractedSkills } = useApp()
+  const { resumeText, setResumeText, resumePdfName, setResumePdfName, extractedSkills, setExtractedSkills } = useApp()
   const navigate = useNavigate()
 
   const analyzed = extractedSkills.length > 0
@@ -28,6 +28,7 @@ export default function ResumeUploadPage() {
       const uploadData = await uploadRes.json()
       if (!uploadRes.ok) throw new Error(uploadData.error || 'Upload failed')
       setResumeText(uploadData.resume_text)
+      setResumePdfName(uploadData.filename)
 
       // Step 2: Extract skills
       const skillRes = await authFetch('/api/skills/extract', {
@@ -55,7 +56,7 @@ export default function ResumeUploadPage() {
       <UploadBox
         file={file}
         onFileAccepted={setFile}
-        onClear={() => { setFile(null); setExtractedSkills([]); setResumeText('') }}
+        onClear={() => { setFile(null); setExtractedSkills([]); setResumeText(''); setResumePdfName('') }}
       />
 
       {error && (

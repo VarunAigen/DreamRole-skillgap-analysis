@@ -104,7 +104,10 @@ async function clearResume(req, res) {
                     collegeDetails: { collegeName: '', degree: '', gradYear: '', gpa: '' },
                     projects: [],
                     certifications: [],
-                    internships: []
+                    internships: [],
+                    resume_pdf_data: '',
+                    resume_pdf_name: '',
+                    resume_pdf_mime: ''
                 } 
             },
             { upsert: false }
@@ -116,4 +119,27 @@ async function clearResume(req, res) {
     }
 }
 
-module.exports = { getProfile, updateProfile, clearResume };
+/**
+ * GET /api/profile/resume/download
+ * Downloads student's own uploaded resume PDF.
+ */
+async function downloadResume(req, res) {
+    try {
+        const uid = req.user.uid;
+        const profile = await UserProfile.findOne({ uid }).lean();
+        if (!profile || !profile.resume_pdf_data) {
+            return res.status(404).json({ error: 'No resume PDF available for download.' });
+        }
+
+        const pdfBuffer = Buffer.from(profile.resume_pdf_data, 'base64');
+        res.setHeader('Content-Type', profile.resume_pdf_mime || 'application/pdf');
+        const filename = profile.resume_pdf_name || 'resume.pdf';
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+        res.send(pdfBuffer);
+    } catch (err) {
+        console.error('downloadResume error:', err.message);
+        res.status(500).json({ error: 'Failed to download resume', details: err.message });
+    }
+}
+
+module.exports = { getProfile, updateProfile, clearResume, downloadResume };
