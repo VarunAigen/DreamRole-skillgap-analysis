@@ -16,7 +16,7 @@ const categoryColors = {
 
 function MentorCard({ persona, onClick }) {
     const catColor = categoryColors[persona.category] || 'bg-slate-100 text-white/60'
-    const initials = persona.name.split(' ').map(n => n[0]).join('').substring(0, 2)
+    const initials = (persona.name || '?').split(' ').map(n => n?.[0] || '').join('').substring(0, 2)
 
     return (
         <div
@@ -51,11 +51,11 @@ function MentorCard({ persona, onClick }) {
 
             <div className="flex flex-wrap gap-1 mb-3">
                 <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${catColor}`}>{persona.category}</span>
-                {persona.skills.slice(0, 3).map(s => (
+                {(persona.skills || []).slice(0, 3).map(s => (
                     <span key={s} className="text-xs px-2 py-0.5 rounded-full bg-white/[0.04] text-white/40">{s}</span>
                 ))}
-                {persona.skills.length > 3 && (
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-white/[0.04] text-white/30">+{persona.skills.length - 3}</span>
+                {(persona.skills || []).length > 3 && (
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-white/[0.04] text-white/30">+{(persona.skills || []).length - 3}</span>
                 )}
             </div>
 
@@ -65,7 +65,7 @@ function MentorCard({ persona, onClick }) {
 }
 
 function RealMentorCard({ mentor, onConnect }) {
-    const initials = mentor.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()
+    const initials = (mentor.name || '?').split(' ').map(n => n?.[0] || '').join('').substring(0, 2).toUpperCase()
     const [connecting, setConnecting] = useState(false)
 
     const handleConnectClick = async (e) => {
@@ -197,7 +197,7 @@ export default function MentorsDiscoverPage() {
     const filteredRealMentors = realMentors.filter(m => {
         if (!search) return true
         const s = search.toLowerCase()
-        return m.name.toLowerCase().includes(s) ||
+        return (m.name || '').toLowerCase().includes(s) ||
             m.designation?.toLowerCase().includes(s) ||
             m.company?.toLowerCase().includes(s) ||
             m.skills?.some(skill => skill.toLowerCase().includes(s))

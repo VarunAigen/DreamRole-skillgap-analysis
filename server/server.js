@@ -21,6 +21,7 @@ const mentorAnalyticsRoutes = require('./routes/mentorAnalytics');
 const authRoutes         = require('./routes/auth');
 const profileRoutes      = require('./routes/profile');
 const chatRoutes         = require('./routes/chat');
+const jdRoutes           = require('./routes/jd');
 
 // Middleware
 const apiLogger = require('./middleware/apiLogger');
@@ -40,11 +41,13 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // ── API Logger (logs every /api/* call to MongoDB) ────────────────────────────
 app.use(apiLogger);
 
-// ── Rate Limiting on heavy AI endpoints ──────────────────────────────────────
+// ── Rate Limiting — per user (uid), not per IP ──────────────────────────────
 const rateLimit = require('express-rate-limit');
 const aiLimiter = rateLimit({
-    windowMs: 1 * 60 * 1000,
+    windowMs: 1 * 60 * 1000, // 1 minute
     max: 20,
+    // Key by authenticated user uid (falls back to IP for unauthenticated requests)
+    keyGenerator: (req) => req.user?.uid || req.ip,
     message: { error: "Too many requests — please slow down." }
 });
 app.use('/api/skills/extract',        aiLimiter);
@@ -52,6 +55,8 @@ app.use('/api/test/generate',         aiLimiter);
 app.use('/api/interview/generate',    aiLimiter);
 app.use('/api/interview/evaluate',    aiLimiter);
 app.use('/api/interview/evaluate-all',aiLimiter);
+app.use('/api/jd/analyze',            aiLimiter);
+app.use('/api/analysis',              aiLimiter);
 
 // ── Routes ────────────────────────────────────────────────────────────────────
 app.use('/api/resume',          resumeRoutes);
@@ -70,6 +75,7 @@ app.use('/api/mentor',          mentorAnalyticsRoutes);
 app.use('/api/auth',            authRoutes);
 app.use('/api/profile',         profileRoutes);
 app.use('/api/chat',            chatRoutes);
+app.use('/api/jd',              jdRoutes);
 
 // ── Health Check ──────────────────────────────────────────────────────────────
 app.get('/api/health', (req, res) => {

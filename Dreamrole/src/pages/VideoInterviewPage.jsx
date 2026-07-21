@@ -331,29 +331,78 @@ export default function VideoInterviewPage() {
         }
     }
 
-    // ── TTS — Read Question Aloud ─────────────────────────────────────────────
-    const readAloud = (text) => {
-        if (!window.speechSynthesis) return
-        window.speechSynthesis.cancel()
+    // ── TTS — Read Question Aloud via OpenAI Speech API ───────────────────────
+    const audioPlayerRef = useRef(null)
+
+    const readAloud = async (text) => {
+        if (!text) return
+        if (window.speechSynthesis) window.speechSynthesis.cancel()
+        if (audioPlayerRef.current) {
+            audioPlayerRef.current.pause()
+            audioPlayerRef.current = null
+        }
+        setIsReading(true)
+
+        try {
+            const res = await authFetch('/api/interview/tts', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text, voice: 'nova' })
+            })
+            if (res.ok) {
+                const blob = await res.blob()
+                const url = URL.createObjectURL(blob)
+                const audio = new Audio(url)
+                audioPlayerRef.current = audio
+                audio.onended = () => setIsReading(false)
+                audio.onerror = () => fallbackSpeechSynthesis(text)
+                await audio.play()
+                return
+            }
+        } catch (e) {
+            console.warn('[TTS] Server TTS fallback:', e.message)
+        }
+        fallbackSpeechSynthesis(text)
+    }
+
+    const fallbackSpeechSynthesis = (text) => {
+        if (!window.speechSynthesis) { setIsReading(false); return }
         const utter = new SpeechSynthesisUtterance(text)
         utter.rate = 0.92
         utter.pitch = 1.05
         utter.volume = 1
-        // Prefer a natural English voice
-        const voices = window.speechSynthesis.getVoices()
-        const preferred = voices.find(v => v.lang === 'en-US' && v.name.includes('Google'))
-            || voices.find(v => v.lang === 'en-US')
-            || null
-        if (preferred) utter.voice = preferred
-
         utter.onstart = () => setIsReading(true)
         utter.onend   = () => setIsReading(false)
         utter.onerror = () => setIsReading(false)
         window.speechSynthesis.speak(utter)
     }
 
+    // ── Whisper Audio Transcription ───────────────────────────────────────────
+    const transcribeCurrentAudio = async (idx) => {
+        try {
+            const blob = voice.getAudioBlob?.()
+            if (!blob || blob.size < 3000) return
+            const formData = new FormData()
+            formData.append('audio', blob, `q${idx}_speech.webm`)
+            const res = await authFetch('/api/interview/transcribe', {
+                method: 'POST',
+                body: formData
+            })
+            if (res.ok) {
+                const data = await res.json()
+                if (data.text && data.text.length > 5) {
+                    setAnswers(prev => ({ ...prev, [idx]: data.text }))
+                    return data.text
+                }
+            }
+        } catch (e) {
+            console.warn('[Whisper] Audio transcription notice:', e.message)
+        }
+        return answers[idx] || ''
+    }
+
     // ── Navigation ─────────────────────────────────────────────────────────────
-    const handleNext = () => {
+    const handleNext = async () => {
         const currentAnswer = answers[current] || ''
         const wordCount = currentAnswer.trim().split(/\s+/).filter(Boolean).length
 
@@ -361,17 +410,18 @@ export default function VideoInterviewPage() {
         if (wordCount < 5 && current < questions.length - 1) {
             setShowEmptyWarning(true)
             setTimeout(() => setShowEmptyWarning(false), 4000)
-            // Allow override — user can click again to proceed
             if (!showEmptyWarning) return
         }
         setShowEmptyWarning(false)
+
+        // Attempt Whisper transcription in background for current answer
+        transcribeCurrentAudio(current)
 
         if (current < questions.length - 1) {
             const nextIdx = current + 1
             setCurrent(nextIdx)
             setShowHint(false)
             voice.resetTranscript()
-            // AI reads next question
             setTimeout(() => readAloud(questions[nextIdx].question), 400)
         } else {
             finishInterview()
@@ -869,11 +919,11 @@ export default function VideoInterviewPage() {
                                     </div>
                                 )}
 
-                                {/* Model answer points (revealed after evaluation) */}
+                                 {/* Model answer points (revealed after evaluation) */}
                                 {modelPts.length > 0 && (
                                     <div style={{
                                         background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)',
-                                        borderRadius: 12, padding: '12px 14px', marginBottom: emotionNote ? 10 : 0
+                                        borderRadius: 12, padding: '12px 14px', marginBottom: (emotionNote || ev?.hr_reframed_answer) ? 10 : 0
                                     }}>
                                         <p style={{ fontSize: 10, color: '#818cf8', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 6px' }}>
                                             💡 What the ideal answer should cover:
@@ -883,6 +933,21 @@ export default function VideoInterviewPage() {
                                                 {j + 1}. {pt}
                                             </p>
                                         ))}
+                                    </div>
+                                )}
+
+                                {/* HR & Mentor Re-framed Answer */}
+                                {ev?.hr_reframed_answer && (
+                                    <div style={{
+                                        background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.25)',
+                                        borderRadius: 12, padding: '12px 14px', marginBottom: emotionNote ? 10 : 0
+                                    }}>
+                                        <p style={{ fontSize: 10, color: '#4ade80', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 6px' }}>
+                                            ✨ HR & Mentor Re-framed Answer (How to phrase this for maximum impact):
+                                        </p>
+                                        <p style={{ fontSize: 12, color: '#d1fae5', lineHeight: 1.6, margin: 0, fontStyle: 'italic' }}>
+                                            "{ev.hr_reframed_answer}"
+                                        </p>
                                     </div>
                                 )}
 

@@ -1,4 +1,4 @@
-const { generateInterviewQuestions, evaluateInterviewAnswer } = require('../services/openaiService');
+const { generateInterviewQuestions, evaluateInterviewAnswer, transcribeAudio, generateTTS } = require('../services/openaiService');
 const { getRequiredSkillsCategorized } = require('../services/dataService');
 
 // In-memory store for model answer points (keyed by session) - not exposed to frontend
@@ -37,7 +37,8 @@ async function generateInterviewQuestionsController(req, res) {
         }
 
         // Store model_answer_points server-side (keyed by uid or session hash)
-        const uid = req.headers['x-user-uid'] || req.user?.uid || 'anonymous';
+        // IDOR fix: use verified Firebase token uid only
+        const uid = req.user?.uid || 'anonymous';
         const storeKey = `${uid}:${role}`;
         const questionsWithModelAnswers = questions.map(q => ({
             ...q,
@@ -90,5 +91,49 @@ async function evaluateInterviewAnswerController(req, res) {
     }
 }
 
-module.exports = { generateInterviewQuestionsController, evaluateInterviewAnswerController, modelAnswerStore };
+/**
+ * POST /api/interview/transcribe
+ * Transcribe uploaded audio file using OpenAI Whisper.
+ */
+async function transcribeAudioController(req, res) {
+    try {
+        if (!req.file || !req.file.buffer) {
+            return res.status(400).json({ error: 'Audio file is required' });
+        }
+
+        const text = await transcribeAudio(req.file.buffer, req.file.originalname || 'speech.webm');
+        res.json({ success: true, text });
+    } catch (err) {
+        console.error('Whisper transcription error:', err.message);
+        res.status(500).json({ error: 'Transcription failed', details: err.message });
+    }
+}
+
+/**
+ * POST /api/interview/tts
+ * Convert question/text into natural MP3 audio using OpenAI Speech API.
+ */
+async function generateTTSController(req, res) {
+    try {
+        const { text, voice = 'nova' } = req.body;
+        if (!text) {
+            return res.status(400).json({ error: 'Text is required for TTS' });
+        }
+
+        const audioBuffer = await generateTTS(text, voice);
+        res.setHeader('Content-Type', 'audio/mpeg');
+        res.send(audioBuffer);
+    } catch (err) {
+        console.error('TTS generation error:', err.message);
+        res.status(500).json({ error: 'TTS generation failed', details: err.message });
+    }
+}
+
+module.exports = {
+    generateInterviewQuestionsController,
+    evaluateInterviewAnswerController,
+    transcribeAudioController,
+    generateTTSController,
+    modelAnswerStore
+};
 

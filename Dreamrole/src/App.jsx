@@ -18,6 +18,7 @@ import MentorAnalyticsDashboard from './pages/MentorAnalyticsDashboard'
 import ProfilePage from './pages/ProfilePage'
 import MentorDashboard from './pages/MentorDashboard'
 import ChatPage from './pages/ChatPage'
+import JdAnalyzerPage from './pages/JdAnalyzerPage'
 import { AuthProvider } from './context/AuthContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import RoleProtectedRoute from './components/RoleProtectedRoute'
@@ -47,6 +48,7 @@ export default function App() {
             <Route path="profile" element={<ProfilePage />} />
             <Route path="mentor-dashboard" element={<RoleProtectedRoute allowedRoles={['admin', 'mentor']}><MentorDashboard /></RoleProtectedRoute>} />
             <Route path="chat" element={<ChatPage />} />
+            <Route path="jd-analyzer" element={<JdAnalyzerPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

@@ -18,7 +18,8 @@ const navGroups = [
     title: 'Core Journey',
     items: [
       { to: '/dashboard/workflow', label: 'My Journey', icon: Sparkles },
-      { to: '/dashboard/roadmap', label: 'Improvement Roadmap', icon: Map }
+      { to: '/dashboard/roadmap', label: 'Improvement Roadmap', icon: Map },
+      { to: '/dashboard/jd-analyzer', label: 'JD Analyzer', icon: FileBarChart }
     ]
   },
   {

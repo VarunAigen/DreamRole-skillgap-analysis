@@ -1,15 +1,29 @@
 const express = require('express');
 const router = express.Router();
-const { generateInterviewQuestionsController, evaluateInterviewAnswerController, modelAnswerStore } = require('../controllers/interviewController');
+const { 
+    generateInterviewQuestionsController, 
+    evaluateInterviewAnswerController, 
+    transcribeAudioController,
+    generateTTSController,
+    modelAnswerStore 
+} = require('../controllers/interviewController');
 const { firebaseAuth } = require('../middleware/firebaseAuth');
+const { validate, interviewGenerateSchema, interviewEvaluateSchema } = require('../middleware/validation');
 const { batchEvaluateAnswers } = require('../services/openaiService');
 const InterviewSession = require('../models/InterviewSession');
+const audioUpload = require('../utils/audioUpload');
 
 // POST /api/interview/generate  — resume-based interview questions (calls OpenAI)
-router.post('/generate', firebaseAuth(), generateInterviewQuestionsController);
+router.post('/generate', firebaseAuth(), validate(interviewGenerateSchema), generateInterviewQuestionsController);
 
 // POST /api/interview/evaluate  — evaluate one answer (calls OpenAI)
-router.post('/evaluate', firebaseAuth(), evaluateInterviewAnswerController);
+router.post('/evaluate', firebaseAuth(), validate(interviewEvaluateSchema), evaluateInterviewAnswerController);
+
+// POST /api/interview/transcribe — transcribe audio file with OpenAI Whisper
+router.post('/transcribe', firebaseAuth(), audioUpload.single('audio'), transcribeAudioController);
+
+// POST /api/interview/tts — generate natural speech audio for question readout
+router.post('/tts', firebaseAuth(), generateTTSController);
 
 // POST /api/interview/evaluate-all  — rubric-based batch evaluation (1 GPT call)
 router.post('/evaluate-all', firebaseAuth(), async (req, res) => {
@@ -17,7 +31,8 @@ router.post('/evaluate-all', firebaseAuth(), async (req, res) => {
     if (!questions?.length) return res.status(400).json({ error: 'questions array is required' });
     try {
         // Retrieve server-side model_answer_points (hidden from frontend during interview)
-        const uid = req.headers['x-user-uid'] || req.user?.uid || 'anonymous';
+        // IDOR fix: use verified Firebase token uid only
+        const uid = req.user?.uid || 'anonymous';
         const storeKey = `${uid}:${role || 'Software Engineer'}`;
         const storedQuestions = modelAnswerStore.get(storeKey);
 

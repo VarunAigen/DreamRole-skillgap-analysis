@@ -73,7 +73,7 @@ async function analyzeSkillGap(req, res) {
 
         // Persist full analysis result to MongoDB (upsert per uid + role)
         try {
-            const uid = req.headers['x-user-uid'] || user_id || 'anonymous';
+            const uid = req.user?.uid || 'anonymous';
             await AnalysisResult.findOneAndUpdate(
                 { uid, role: resolvedRole },
                 {
@@ -98,7 +98,7 @@ async function analyzeSkillGap(req, res) {
 
         // Update UserProfile last_alignment_stage snapshot (non-fatal)
         try {
-            const uid = req.headers['x-user-uid'] || user_id;
+            const uid = req.user?.uid;
             if (uid && uid !== 'anonymous') {
                 await UserProfile.findOneAndUpdate(
                     { uid },

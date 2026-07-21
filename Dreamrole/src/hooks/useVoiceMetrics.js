@@ -115,6 +115,26 @@ export function useVoiceMetrics(active = false) {
             const source = audioCtx.createMediaStreamSource(stream)
             source.connect(analyser)
 
+            // Setup MediaRecorder for high-accuracy Whisper transcription
+            audioChunksRef.current = []
+            let mimeType = 'audio/webm'
+            if (!MediaRecorder.isTypeSupported('audio/webm')) {
+                if (MediaRecorder.isTypeSupported('audio/mp4')) mimeType = 'audio/mp4'
+                else if (MediaRecorder.isTypeSupported('audio/ogg')) mimeType = 'audio/ogg'
+            }
+            try {
+                const recorder = new MediaRecorder(stream, { mimeType })
+                recorder.ondataavailable = (e) => {
+                    if (e.data && e.data.size > 0) {
+                        audioChunksRef.current.push(e.data)
+                    }
+                }
+                recorder.start(1000) // collect slice every 1s
+                mediaRecorderRef.current = recorder
+            } catch (recErr) {
+                console.warn('[VoiceMetrics] MediaRecorder setup warning:', recErr.message)
+            }
+
             const dataArray = new Uint8Array(analyser.frequencyBinCount)
             let volumeSum = 0
             let volumeSamples = 0
@@ -147,6 +167,25 @@ export function useVoiceMetrics(active = false) {
         return () => clearInterval(interval)
     }, [isListening])
 
+    const mediaRecorderRef = useRef(null)
+    const audioChunksRef = useRef([])
+
+    const getAudioBlob = useCallback(() => {
+        if (!audioChunksRef.current.length) return null
+        const mimeType = mediaRecorderRef.current?.mimeType || 'audio/webm'
+        return new Blob(audioChunksRef.current, { type: mimeType })
+    }, [])
+
+    const resetAudioBlob = useCallback(() => {
+        audioChunksRef.current = []
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+            try {
+                mediaRecorderRef.current.stop()
+                mediaRecorderRef.current.start(1000)
+            } catch (e) {}
+        }
+    }, [])
+
     const startListening = useCallback(async () => {
         if (isListening) return
         setTranscript('')
@@ -155,6 +194,7 @@ export function useVoiceMetrics(active = false) {
         wordCountRef.current = 0
         startTimeRef.current = Date.now()
         lastSpeechRef.current = Date.now()
+        audioChunksRef.current = []
 
         setIsListening(true)
         isListeningRef.current = true
@@ -181,6 +221,9 @@ export function useVoiceMetrics(active = false) {
         isListeningRef.current = false
         setIsListening(false)
         recognitionRef.current?.stop()
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+            try { mediaRecorderRef.current.stop() } catch (e) {}
+        }
         if (volumeFrameRef.current) cancelAnimationFrame(volumeFrameRef.current)
         if (audioCtxRef.current) audioCtxRef.current.close()
         if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop())
@@ -192,7 +235,8 @@ export function useVoiceMetrics(active = false) {
         setInterimTranscript('')
         wordCountRef.current = 0
         startTimeRef.current = Date.now()
-    }, [])
+        resetAudioBlob()
+    }, [resetAudioBlob])
 
     // Auto-start/stop based on active prop
     useEffect(() => {
@@ -212,6 +256,8 @@ export function useVoiceMetrics(active = false) {
         avgVolume,
         isListening,
         isSupported,
+        getAudioBlob,
+        resetAudioBlob,
         startListening,
         stopListening,
         resetTranscript

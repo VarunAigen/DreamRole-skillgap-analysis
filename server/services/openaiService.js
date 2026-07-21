@@ -377,32 +377,32 @@ async function batchEvaluateAnswers(questions, answers, role, userName = 'Candid
         };
     }
 
-    const prompt = `You are a STRICT but encouraging technical interview evaluator for ${userName} applying for "${role}".
+    const prompt = `You are a STRICT, grounded technical and HR interview evaluator evaluating answers for ${userName} applying for the role of "${role}".
 
-EVALUATION RUBRIC (apply consistently):
-1. Technical Accuracy (40%): Does the answer correctly address the technical concepts? Compare against the MODEL ANSWER POINTS provided.
-2. Specificity (25%): Does the candidate give concrete examples (project names, numbers, technologies, outcomes)?
-3. Communication Clarity (20%): Is the answer well-structured, clear, and professional?
-4. Role Relevance (15%): Does the answer demonstrate understanding of the "${role}" role specifically?
+EVALUATION RUBRIC & SCORING RULES:
+1. Technical Accuracy (40%): Evaluate factual correctness against the MODEL ANSWER POINTS provided. Penalize buzzword-stuffing or incorrect statements.
+2. STAR Structure & Specificity (25%): Evaluate if the answer follows STAR (Situation, Task, Action, Result). Did they mention concrete technologies, numbers, or specific actions?
+3. Communication Clarity (20%): Is the answer concise, logical, and clear?
+4. Role Relevance (15%): Does it directly fit the expectations for a "${role}"?
 
-SCORING GUIDE:
-- 85-100 → "Excellent" (covers most model answer points + adds own insights)
-- 65-84  → "Good" (covers some model answer points, decent examples)
-- 40-64  → "Developing" (partially correct, vague, lacks specifics)
-- 0-39   → "Needs Improvement" (incorrect, off-topic, or too brief)
+SCORING CONSTRAINTS:
+- 85-100 → "Excellent" (Covers most model points + STAR structured + specific)
+- 65-84  → "Good" (Covers key points, good response, minor gaps)
+- 40-64  → "Developing" (Vague, lacks specific actions/metrics, misses core technical points)
+- 0-39   → "Needs Improvement" (Factually wrong, off-topic, or under 15 words)
 
 ANSWERS TO EVALUATE:
 ${items.map(item => `
 Q${item.index + 1} [${item.category}]: "${item.question}"
-MODEL ANSWER POINTS (what a correct answer should cover): ${item.modelPoints.length > 0 ? item.modelPoints.map((p, j) => `${j + 1}. ${p}`).join('; ') : 'No reference available — evaluate on general merit'}
-Candidate's Answer: "${item.answer.substring(0, 600)}"${item.emotion ? `\nCandidate's Emotional State: ${item.emotion.emotion} (${item.emotion.confidence}% confidence)` : ''}
+MODEL ANSWER POINTS: ${item.modelPoints.length > 0 ? item.modelPoints.map((p, j) => `${j + 1}. ${p}`).join('; ') : 'Evaluate on technical merit'}
+Candidate's Answer: "${item.answer.substring(0, 800)}"${item.emotion ? `\nEmotional state during answer: ${item.emotion.emotion} (${item.emotion.confidence}% confidence)` : ''}
 `).join('\n---\n')}
 
-Return ONLY a valid JSON array (one object per answered question, SAME ORDER):
+Return ONLY a valid JSON array matching this structure exactly (one item per answered question, same order):
 [
   {
-    "index": <0-based question index>,
-    "score": <0-100 numeric score>,
+    "index": <0-based index>,
+    "score": <0-100 score>,
     "rubric": {
       "technical_accuracy": <0-100>,
       "specificity": <0-100>,
@@ -410,24 +410,35 @@ Return ONLY a valid JSON array (one object per answered question, SAME ORDER):
       "role_relevance": <0-100>
     },
     "stage": "Excellent" | "Good" | "Developing" | "Needs Improvement",
-    "feedback": "2-3 sentence evaluation addressing ${userName} by name. Reference specific things they said (or should have said based on model answer points).",
+    "feedback": "2-3 sentence honest evaluation addressing ${userName} by name. Detail what was done well vs missed.",
     "strengths": ["specific strength 1", "specific strength 2"],
-    "improvements": ["actionable suggestion 1", "actionable suggestion 2"]${emotionPerQuestion ? ',\n    "emotion_note": "brief observation about their emotional state during this question (encouraging tone)"' : ''}
+    "improvements": ["actionable improvement 1", "actionable improvement 2"],
+    "hr_reframed_answer": "A 2-4 sentence polished, STAR-structured model answer that ${userName} SHOULD have given for this question to impress HR or a Senior Mentor."${emotionPerQuestion ? ',\n    "emotion_note": "Observation on confidence & vocal delivery"' : ''}
   }
 ]
-
-CRITICAL: Be HONEST. If the answer is factually wrong or misses the model answer points, say so clearly. Do NOT give "Good" to vague or incorrect answers.`;
+`;
 
     const response = await client.chat.completions.create({
         model: DEFAULT_MODEL,
+        response_format: { type: "json_object" },
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.3,
-        max_tokens: 3500
+        max_tokens: 3800
     });
 
     const totalTokens = response.usage?.total_tokens || 0;
     const content = response.choices[0].message.content.trim();
-    const jsonMatch = content.match(/\[[\s\S]*\]/);
+    let jsonMatch = content.match(/\[[\s\S]*\]/);
+
+    if (!jsonMatch && content.startsWith('{')) {
+        // Fallback if returned object wrapping array
+        try {
+            const parsedObj = JSON.parse(content);
+            if (Array.isArray(parsedObj.evaluations)) {
+                jsonMatch = [JSON.stringify(parsedObj.evaluations)];
+            }
+        } catch (e) {}
+    }
 
     if (!jsonMatch) {
         return {
@@ -435,8 +446,8 @@ CRITICAL: Be HONEST. If the answer is factually wrong or misses the model answer
                 stage: 'Developing',
                 score: 50,
                 rubric: { technical_accuracy: 50, specificity: 50, clarity: 50, role_relevance: 50 },
-                feedback: 'Answer evaluated. Add more specific examples next time.',
-                strengths: [], improvements: [], model_answer_points: []
+                feedback: 'Answer evaluated. Add more specific project details and outcomes next time.',
+                strengths: [], improvements: [], model_answer_points: [], hr_reframed_answer: ''
             })),
             tokensUsed: totalTokens
         };
@@ -448,8 +459,8 @@ CRITICAL: Be HONEST. If the answer is factually wrong or misses the model answer
     const result = questions.map((q, i) => {
         const ev = evaluations.find(e => e.index === i);
         if (ev) {
-            // Attach model_answer_points so frontend can reveal them
             ev.model_answer_points = q.model_answer_points || [];
+            ev.hr_reframed_answer = ev.hr_reframed_answer || '';
             return ev;
         }
         return {
@@ -459,11 +470,52 @@ CRITICAL: Be HONEST. If the answer is factually wrong or misses the model answer
             feedback: `This question was not answered, ${userName}. Make sure to address every question in a real interview.`,
             strengths: [],
             improvements: ['Attempt every question — partial answers count'],
-            model_answer_points: q.model_answer_points || []
+            model_answer_points: q.model_answer_points || [],
+            hr_reframed_answer: ''
         };
     });
 
     return { evaluations: result, tokensUsed: totalTokens };
+}
+
+/**
+ * Transcribe audio using OpenAI Whisper API (`whisper-1`).
+ * @param {Buffer} audioBuffer - Buffer of the audio file
+ * @param {string} originalName - e.g. "recording.webm"
+ * @returns {Promise<string>} Transcribed text
+ */
+async function transcribeAudio(audioBuffer, originalName = 'audio.webm') {
+    const Readable = require('stream').Readable;
+    const stream = new Readable();
+    stream.push(audioBuffer);
+    stream.push(null);
+    stream.path = originalName;
+
+    const response = await client.audio.transcriptions.create({
+        file: stream,
+        model: 'whisper-1',
+        language: 'en',
+        temperature: 0.2
+    });
+
+    return response.text ? response.text.trim() : '';
+}
+
+/**
+ * Generate speech audio from text using OpenAI Speech API (`tts-1`).
+ * @param {string} text - Question or text to read aloud
+ * @param {string} voice - Voice choice ('nova', 'alloy', 'echo', 'fable', 'onyx', 'shimmer')
+ * @returns {Promise<Buffer>} MP3 audio buffer
+ */
+async function generateTTS(text, voice = 'nova') {
+    const mp3Response = await client.audio.speech.create({
+        model: 'tts-1',
+        voice: voice,
+        input: text.substring(0, 1000)
+    });
+
+    const arrayBuffer = await mp3Response.arrayBuffer();
+    return Buffer.from(arrayBuffer);
 }
 
 /**
@@ -550,6 +602,135 @@ CRITICAL RULES:
     return response.choices[0].message.content.trim();
 }
 
+/**
+ * ★ Advanced JD Gap Analysis Engine — rubric-based scoring with honesty guardrails.
+ * Compares resume against JD using weighted categories and flags hard disqualifiers.
+ */
+async function generateJdMatch(resumeText, jdText) {
+    const cacheKey = `jd:${hashText(resumeText.substring(0, 500) + jdText.substring(0, 500))}`;
+    const cached = cache.get(cacheKey);
+    if (cached) {
+        console.log('[Cache HIT] generateJdMatch');
+        return cached;
+    }
+
+    const prompt = `You are a resume-to-job-description gap analysis engine. Your job is to compare a candidate's resume against a job description and output an accurate, structured gap report. You are NOT writing a new resume — you are diagnosing gaps and scoring fit.
+
+INPUTS:
+
+JOB DESCRIPTION:
+${jdText.substring(0, 5000)}
+
+RESUME:
+${resumeText.substring(0, 5000)}
+
+YOUR TASK — do the following in order:
+
+1. EXTRACT REQUIREMENTS FROM THE JD
+   - Separate into: (a) Hard requirements/basic qualifications (degree, CGPA, years of experience, graduation year, availability/location) (b) Core technical skills/tools named explicitly (c) Preferred/nice-to-have qualifications (d) Soft skills or behavioral traits mentioned
+   - Note which are phrased as mandatory ("must have", "required") vs preferred ("nice to have", "preferred", "bonus").
+
+2. EXTRACT SIGNAL FROM THE RESUME
+   - Pull out: stated degree + CGPA/GPA if present, all named tools/technologies/languages, all project descriptions with their tech stacks, all work experience with responsibilities, certifications, soft-skill evidence (leadership roles, communication evidence, etc.)
+   - Do not infer skills that are not explicitly stated or strongly implied by a named tool/project. E.g., listing "Node.js" does NOT imply "AWS Lambda" experience.
+
+3. MATCH AND SCORE
+   - For each hard requirement: mark as MET / NOT MET / UNCLEAR (unclear = resume doesn't state it, e.g. no CGPA listed).
+   - For each core technical skill in the JD: mark as DIRECT MATCH (explicitly named in resume), ADJACENT MATCH (resume shows a related/transferable skill, e.g. "GCP" resume vs "AWS" JD), or GAP (no evidence at all).
+   - Do not count a keyword as matched just because a similar-sounding word appears elsewhere out of context.
+   - Calculate a numeric score out of 100 using this weighting: Hard/basic qualifications met = 40%, Core technical skill match = 35%, Preferred qualifications = 15%, Soft skills/culture signals = 10%.
+   - Hard requirement failures (e.g. wrong degree type, CGPA below stated cutoff) should cap the overall score — flag explicitly as "may be an automatic disqualifier" rather than just averaging it in.
+
+4. OUTPUT FORMAT — return ONLY this JSON:
+{
+  "overall_score": <0-100>,
+  "hard_requirement_flags": [
+    {"requirement": "...", "status": "met|not_met|unclear", "note": "..."}
+  ],
+  "matched_keywords": ["..."],
+  "adjacent_matches": [{"jd_term": "...", "resume_term": "...", "note": "why this counts as partial"}],
+  "missing_keywords": ["..."],
+  "formatting_issues": ["..."],
+  "actionable_suggestions": [
+    {
+      "type": "add_section|rephrase_bullet|add_project|get_certification|fill_missing_field",
+      "suggestion": "...",
+      "honesty_note": "Only suggest this if user can truthfully claim it OR frame it as a suggestion to go acquire this skill before applying — NEVER suggest resume language that fabricates experience"
+    }
+  ],
+  "shortlist_likelihood": "low|medium|high",
+  "shortlist_reasoning": "1-2 sentence honest explanation, mentioning any hard disqualifiers explicitly",
+  "projects": [
+    {
+      "title": "Suggested project name",
+      "description": "Short description integrating missing skills",
+      "tags": ["skill1", "skill2"],
+      "link": "https://github.com/topics/relevant-topic"
+    }
+  ],
+  "certifications": [
+    {
+      "title": "Relevant certification name",
+      "platform": "Coursera/Udemy/AWS/etc",
+      "link": "https://example.com"
+    }
+  ]
+}
+
+CRITICAL GUARDRAILS:
+- NEVER generate resume bullet suggestions that claim tools/experience not evidenced in the original resume. If a keyword is missing, suggest it as a skill-gap to close via a project/course, not as resume copy to paste in.
+- Do not inflate the score. Be calibrated — most real resumes against a specific JD should score 40-75, not 85+. Scores in high 80s/90s should be rare.
+- If the resume is missing a data point needed to evaluate a hard requirement (like CGPA), mark it "unclear" and flag it as a risk, not a pass.
+- Be specific with the missing keyword list — pull exact terms from the JD's tech stack, not generic categories.
+- Limit: missing_keywords max 10, projects max 2, certifications max 2, actionable_suggestions max 5.`;
+
+    const response = await client.chat.completions.create({
+        model: DEFAULT_MODEL,
+        response_format: { type: "json_object" },
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.3,
+        max_tokens: 3000
+    });
+
+    try {
+        const content = response.choices[0].message.content.trim();
+        const parsed = JSON.parse(content);
+        
+        // Normalize: ensure backward-compatible match_score alias
+        parsed.match_score = parsed.overall_score || 0;
+        
+        // Ensure all expected arrays exist
+        parsed.hard_requirement_flags = parsed.hard_requirement_flags || [];
+        parsed.matched_keywords = parsed.matched_keywords || [];
+        parsed.adjacent_matches = parsed.adjacent_matches || [];
+        parsed.missing_keywords = parsed.missing_keywords || [];
+        parsed.formatting_issues = parsed.formatting_issues || [];
+        parsed.actionable_suggestions = parsed.actionable_suggestions || [];
+        parsed.projects = parsed.projects || [];
+        parsed.certifications = parsed.certifications || [];
+        parsed.shortlist_likelihood = parsed.shortlist_likelihood || 'medium';
+        parsed.shortlist_reasoning = parsed.shortlist_reasoning || '';
+
+        // Build backward-compatible ats_check from the new fields
+        parsed.ats_check = {
+            score: parsed.overall_score || 0,
+            feedback: parsed.shortlist_reasoning || '',
+            formatting_issues: parsed.formatting_issues || []
+        };
+        // Build backward-compatible summary_update and suggested_bullet_points
+        parsed.summary_update = parsed.shortlist_reasoning || '';
+        parsed.suggested_bullet_points = (parsed.actionable_suggestions || [])
+            .filter(s => s.type === 'rephrase_bullet')
+            .map(s => s.suggestion);
+
+        cache.set(cacheKey, parsed);
+        return parsed;
+    } catch (e) {
+        console.error("JD Match parsing error:", e);
+        throw new Error("Failed to parse AI response for JD match");
+    }
+}
+
 /** Expose cache stats for admin monitoring */
 function getCacheStats() {
     return cache.getStats();
@@ -568,8 +749,11 @@ module.exports = {
     generateInterviewQuestions,
     evaluateInterviewAnswer,
     batchEvaluateAnswers,
+    transcribeAudio,
+    generateTTS,
     generateCareerRoadmap,
     chatWithMentor,
+    generateJdMatch,
     getCacheStats,
     flushCache
 };
