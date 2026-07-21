@@ -1,4 +1,28 @@
-const puppeteer = require('puppeteer');
+/**
+ * Helper to launch Puppeteer browser safely across local dev and Vercel serverless functions.
+ */
+async function launchBrowser() {
+    if (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME) {
+        try {
+            const chromium = require('@sparticuz/chromium');
+            const puppeteerCore = require('puppeteer-core');
+            return await puppeteerCore.launch({
+                args: chromium.args,
+                defaultViewport: chromium.defaultViewport,
+                executablePath: await chromium.executablePath(),
+                headless: chromium.headless,
+                ignoreHTTPSErrors: true
+            });
+        } catch (e) {
+            console.warn('[ReportService] Chromium serverless launch failed, trying puppeteer fallback:', e.message);
+        }
+    }
+    const puppeteer = require('puppeteer');
+    return await puppeteer.launch({
+        headless: true,
+        args: ['--no-sandbox', '--disable-setuid-sandbox']
+    });
+}
 
 /**
  * Generate a PDF report from analysis data.
@@ -119,10 +143,7 @@ async function generatePDFReport(data) {
 </body>
 </html>`;
 
-    const browser = await puppeteer.launch({
-        headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox']
-    });
+    const browser = await launchBrowser();
 
     try {
         const page = await browser.newPage();
