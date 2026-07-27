@@ -379,18 +379,92 @@ Return ONLY a valid JSON array. Each item:
 Resume:
 ${resumeText.substring(0, 3500)}`;
 
-    const response = await client.chat.completions.create({
-        model: DEFAULT_MODEL,
-        messages: [{ role: 'user', content: prompt }],
-        temperature: 0.6,
-        max_tokens: 3000
-    });
+    try {
+        const response = await client.chat.completions.create({
+            model: DEFAULT_MODEL,
+            messages: [{ role: 'user', content: prompt }],
+            temperature: 0.6,
+            max_tokens: 3000
+        });
 
-    const content = response.choices[0].message.content.trim();
-    const jsonMatch = content.match(/\[[\s\S]*\]/);
-    const questions = jsonMatch ? JSON.parse(jsonMatch[0]) : [];
-    cache.set(cacheKey, questions);
-    return questions;
+        const content = response.choices[0].message.content.trim();
+        const jsonMatch = content.match(/\[[\s\S]*\]/);
+        const questions = jsonMatch ? JSON.parse(jsonMatch[0]) : [];
+        if (Array.isArray(questions) && questions.length > 0) {
+            cache.set(cacheKey, questions);
+            return questions;
+        }
+        return generateFallbackInterviewQuestions(resumeText, role, count);
+    } catch (e) {
+        console.warn("Interview question generation API error, using fallback:", e.message);
+        const fallback = generateFallbackInterviewQuestions(resumeText, role, count);
+        cache.set(cacheKey, fallback);
+        return fallback;
+    }
+}
+
+function generateFallbackInterviewQuestions(resumeText, role, count = 5) {
+    const resumeSkills = fallbackExtractSkills(resumeText);
+    const topSkills = resumeSkills.slice(0, 3).join(', ') || 'software development';
+
+    const defaultQuestions = [
+        {
+            question: `Can you walk me through a complex technical project you built using ${topSkills}, focusing on the architecture and key challenges you overcame?`,
+            category: "Project Experience",
+            hint: "Focus on your specific role, technical decisions, and the measurable impact of the project.",
+            model_answer_points: [
+                "Clearly states the problem statement and target audience",
+                "Explains the technical stack choices and architectural decisions",
+                "Describes key technical challenges faced and how they were resolved",
+                "Highlights measurable outcomes or performance metrics"
+            ]
+        },
+        {
+            question: `How do you approach debugging and performance optimization when an application in production encounters high latency?`,
+            category: "Problem Solving",
+            hint: "Explain your step-by-step diagnostic workflow using profiling tools and log analysis.",
+            model_answer_points: [
+                "Mentions inspecting logs, monitoring metrics, and reproducing the issue",
+                "Identifies bottleneck types (CPU, memory leak, network, database query)",
+                "Proposes profiling tools and optimization techniques",
+                "Emphasizes regression testing before deploying the fix"
+            ]
+        },
+        {
+            question: `In a ${role} position, how do you handle technical disagreements within a team regarding framework or tool selection?`,
+            category: "Technical Knowledge",
+            hint: "Structure your response around objective evaluation, trade-off analysis, and team alignment.",
+            model_answer_points: [
+                "Demonstrates evaluating options based on data and project requirements",
+                "Mentions building small Proof-of-Concepts (POCs) to compare performance",
+                "Emphasizes open communication and respecting team consensus",
+                "Prioritizes long-term maintainability over personal preference"
+            ]
+        },
+        {
+            question: `Tell me about a time when you had to learn a new language or tool under tight deadlines. How did you adapt?`,
+            category: "Internship/Work",
+            hint: "Highlight your learning agility, resourcefulness, and practical application.",
+            model_answer_points: [
+                "Identifies the new technology and the driving business urgency",
+                "Outlines structured self-learning steps (docs, tutorials, hands-on experiments)",
+                "Describes building a prototype to validate understanding",
+                "Successfully delivered the required feature within deadline"
+            ]
+        },
+        {
+            question: `What are your short-term and long-term career goals as a ${role}, and how does this position align with them?`,
+            category: "Career Goals",
+            hint: "Connect your current skill development trajectory with long-term technical impact.",
+            model_answer_points: [
+                "Expresses passion for deepening technical expertise in the role domain",
+                "Mentions taking ownership of end-to-end features and mentoring peers",
+                "Aligns personal growth goals with organizational success"
+            ]
+        }
+    ];
+
+    return defaultQuestions.slice(0, count);
 }
 
 /**

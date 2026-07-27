@@ -17,24 +17,35 @@ router.get('/stats', async (req, res) => {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
-        const [totalSessions, todayLogs, allTimeLogs, stageAgg] = await Promise.all([
-            InterviewSession.countDocuments(),
-            ApiLog.countDocuments({ createdAt: { $gte: today } }),
-            ApiLog.find({}, 'tokensUsed estimatedCostUSD openaiModel').lean(),
-            InterviewSession.aggregate([
-                { $group: { _id: '$overallStage', count: { $sum: 1 } } }
-            ])
-        ]);
+        let totalSessions = 0;
+        let todayLogs = 0;
+        let allTimeLogs = [];
+        let stageAgg = [];
+        let todayCost = [];
 
-        const totalTokens = allTimeLogs.reduce((s, l) => s + (l.tokensUsed || 0), 0);
-        const totalCost   = allTimeLogs.reduce((s, l) => s + (l.estimatedCostUSD || 0), 0);
-        const todayCost   = await ApiLog.aggregate([
-            { $match: { createdAt: { $gte: today } } },
-            { $group: { _id: null, cost: { $sum: '$estimatedCostUSD' }, tokens: { $sum: '$tokensUsed' } } }
-        ]);
+        try {
+            [totalSessions, todayLogs, allTimeLogs, stageAgg] = await Promise.all([
+                InterviewSession.countDocuments().catch(() => 0),
+                ApiLog.countDocuments({ createdAt: { $gte: today } }).catch(() => 0),
+                ApiLog.find({}, 'tokensUsed estimatedCostUSD openaiModel').sort({ createdAt: -1 }).limit(1000).lean().catch(() => []),
+                InterviewSession.aggregate([
+                    { $group: { _id: '$overallStage', count: { $sum: 1 } } }
+                ]).catch(() => [])
+            ]);
+
+            todayCost = await ApiLog.aggregate([
+                { $match: { createdAt: { $gte: today } } },
+                { $group: { _id: null, cost: { $sum: '$estimatedCostUSD' }, tokens: { $sum: '$tokensUsed' } } }
+            ]).catch(() => []);
+        } catch (dbErr) {
+            console.warn('[AdminStats] DB aggregation warning:', dbErr.message);
+        }
+
+        const totalTokens = (allTimeLogs || []).reduce((s, l) => s + (l.tokensUsed || 0), 0);
+        const totalCost   = (allTimeLogs || []).reduce((s, l) => s + (l.estimatedCostUSD || 0), 0);
 
         const stageDistribution = {};
-        stageAgg.forEach(s => { stageDistribution[s._id || 'Unknown'] = s.count; });
+        (stageAgg || []).forEach(s => { stageDistribution[s._id || 'Unknown'] = s.count; });
 
         res.json({
             success: true,
