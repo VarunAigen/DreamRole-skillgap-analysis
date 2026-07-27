@@ -17,39 +17,39 @@ const uploadResume = [
                 return res.status(422).json({ error: 'Could not extract meaningful text from the PDF. Please try a different file.' });
             }
 
-            // Save PDF to GridFS and store reference in user profile
+            // Save PDF to GridFS and store reference in user profile if user is authenticated
             if (req.user && req.user.uid && req.query.sessionOnly !== 'true') {
-                // Upload to GridFS
-                const fileId = await uploadResumePdf(
-                    req.user.uid,
-                    req.file.buffer,
-                    req.file.originalname,
-                    req.file.mimetype
-                );
+                try {
+                    // Upload to GridFS
+                    const fileId = await uploadResumePdf(
+                        req.user.uid,
+                        req.file.buffer,
+                        req.file.originalname,
+                        req.file.mimetype
+                    );
 
-                // Delete old GridFS file if one exists
-                const existingProfile = await UserProfile.findOne({ uid: req.user.uid });
-                if (existingProfile && existingProfile.resume_pdf_file_id) {
-                    try {
+                    // Delete old GridFS file if one exists
+                    const existingProfile = await UserProfile.findOne({ uid: req.user.uid });
+                    if (existingProfile && existingProfile.resume_pdf_file_id) {
                         await deleteResumePdf(existingProfile.resume_pdf_file_id);
-                    } catch (e) {
-                        console.warn('[Resume] Could not delete old GridFS file:', e.message);
                     }
-                }
 
-                await UserProfile.findOneAndUpdate(
-                    { uid: req.user.uid },
-                    {
-                        $set: {
-                            resume_pdf_file_id: fileId,
-                            resume_pdf_data: '',           // Clear legacy base64 storage
-                            resume_pdf_name: req.file.originalname,
-                            resume_pdf_mime: req.file.mimetype,
-                            resume_text: resume_text
-                        }
-                    },
-                    { upsert: true, new: true, setDefaultsOnInsert: true }
-                );
+                    await UserProfile.findOneAndUpdate(
+                        { uid: req.user.uid },
+                        {
+                            $set: {
+                                resume_pdf_file_id: fileId,
+                                resume_pdf_data: '',           // Clear legacy base64 storage
+                                resume_pdf_name: req.file.originalname,
+                                resume_pdf_mime: req.file.mimetype,
+                                resume_text: resume_text
+                            }
+                        },
+                        { upsert: true, new: true, setDefaultsOnInsert: true }
+                    );
+                } catch (dbErr) {
+                    console.warn('[ResumeUpload] Could not persist to DB/GridFS:', dbErr.message);
+                }
             }
 
             res.json({

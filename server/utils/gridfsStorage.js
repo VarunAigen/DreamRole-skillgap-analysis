@@ -1,18 +1,38 @@
 const mongoose = require('mongoose');
 
-let _bucket = null;
+/**
+ * Ensures MongoDB is connected (readyState === 1) and returns the native DB instance.
+ * If connecting (readyState === 2), waits up to 5 seconds for the connection to open.
+ */
+async function getDb() {
+    if (mongoose.connection.readyState === 1 && mongoose.connection.db) {
+        return mongoose.connection.db;
+    }
+
+    if (mongoose.connection.readyState === 2) {
+        await new Promise((resolve, reject) => {
+            const timer = setTimeout(() => reject(new Error('MongoDB connection timeout')), 5000);
+            mongoose.connection.once('connected', () => {
+                clearTimeout(timer);
+                resolve();
+            });
+            mongoose.connection.once('error', (err) => {
+                clearTimeout(timer);
+                reject(err);
+            });
+        });
+        if (mongoose.connection.db) return mongoose.connection.db;
+    }
+
+    throw new Error('MongoDB connection is not established. Please check MONGO_URI.');
+}
 
 /**
- * Get or create a GridFSBucket for resume PDF storage.
- * Bucket name: 'resume_pdfs'
- * Files are stored in: resume_pdfs.files + resume_pdfs.chunks
+ * Get a GridFSBucket instance for the 'resume_pdfs' bucket.
  */
-function getBucket() {
-    if (_bucket) return _bucket;
-    const db = mongoose.connection.db;
-    if (!db) throw new Error('MongoDB connection not ready for GridFS');
-    _bucket = new mongoose.mongo.GridFSBucket(db, { bucketName: 'resume_pdfs' });
-    return _bucket;
+async function getBucket() {
+    const db = await getDb();
+    return new mongoose.mongo.GridFSBucket(db, { bucketName: 'resume_pdfs' });
 }
 
 /**
@@ -23,9 +43,9 @@ function getBucket() {
  * @param {string} mimetype - MIME type (e.g. 'application/pdf')
  * @returns {Promise<mongoose.Types.ObjectId>} - GridFS file ID
  */
-function uploadResumePdf(uid, buffer, filename, mimetype) {
+async function uploadResumePdf(uid, buffer, filename, mimetype) {
+    const bucket = await getBucket();
     return new Promise((resolve, reject) => {
-        const bucket = getBucket();
         const uploadStream = bucket.openUploadStream(filename, {
             contentType: mimetype,
             metadata: { uid, uploadedAt: new Date() }
@@ -40,10 +60,10 @@ function uploadResumePdf(uid, buffer, filename, mimetype) {
 /**
  * Download a resume PDF from GridFS as a readable stream.
  * @param {mongoose.Types.ObjectId|string} fileId - GridFS file ID
- * @returns {import('stream').Readable} - Readable stream of the PDF
+ * @returns {Promise<import('stream').Readable>} - Readable stream of the PDF
  */
-function downloadResumePdf(fileId) {
-    const bucket = getBucket();
+async function downloadResumePdf(fileId) {
+    const bucket = await getBucket();
     const objectId = typeof fileId === 'string'
         ? new mongoose.Types.ObjectId(fileId)
         : fileId;
@@ -56,11 +76,15 @@ function downloadResumePdf(fileId) {
  * @returns {Promise<void>}
  */
 async function deleteResumePdf(fileId) {
-    const bucket = getBucket();
-    const objectId = typeof fileId === 'string'
-        ? new mongoose.Types.ObjectId(fileId)
-        : fileId;
-    await bucket.delete(objectId);
+    try {
+        const bucket = await getBucket();
+        const objectId = typeof fileId === 'string'
+            ? new mongoose.Types.ObjectId(fileId)
+            : fileId;
+        await bucket.delete(objectId);
+    } catch (err) {
+        console.warn('[GridFS] deleteResumePdf warning:', err.message);
+    }
 }
 
 /**
@@ -69,13 +93,17 @@ async function deleteResumePdf(fileId) {
  * @returns {Promise<Object|null>}
  */
 async function getFileInfo(fileId) {
-    const bucket = getBucket();
-    const objectId = typeof fileId === 'string'
-        ? new mongoose.Types.ObjectId(fileId)
-        : fileId;
-    const cursor = bucket.find({ _id: objectId });
-    const files = await cursor.toArray();
-    return files.length > 0 ? files[0] : null;
+    try {
+        const bucket = await getBucket();
+        const objectId = typeof fileId === 'string'
+            ? new mongoose.Types.ObjectId(fileId)
+            : fileId;
+        const cursor = bucket.find({ _id: objectId });
+        const files = await cursor.toArray();
+        return files.length > 0 ? files[0] : null;
+    } catch (err) {
+        return null;
+    }
 }
 
 module.exports = {

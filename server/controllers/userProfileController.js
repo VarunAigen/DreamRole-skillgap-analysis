@@ -152,7 +152,7 @@ async function downloadResume(req, res) {
         if (profile.resume_pdf_file_id) {
             res.setHeader('Content-Type', mime);
             res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-            const stream = downloadResumePdf(profile.resume_pdf_file_id);
+            const stream = await downloadResumePdf(profile.resume_pdf_file_id);
             stream.on('error', (err) => {
                 console.error('GridFS stream error:', err.message);
                 res.status(500).json({ error: 'Failed to stream resume from storage' });
