@@ -3,7 +3,7 @@ const NodeCache = require('node-cache');
 const crypto = require('crypto');
 
 const client = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
+    apiKey: process.env.OPENAI_API_KEY || 'dummy_key_for_initialization',
     baseURL: process.env.OPENAI_API_BASE || 'https://api.openai.com/v1'
 });
 
@@ -47,32 +47,54 @@ Return a valid JSON object with the following structure:
 Resume text:
 ${resumeText.substring(0, 6000)}`;
 
-    const response = await client.chat.completions.create({
-        model: DEFAULT_MODEL,
-        response_format: { type: "json_object" },
-        messages: [{ 
-            role: 'system', 
-            content: 'You are an expert technical recruiter specializing in accurate skill extraction from resumes.' 
-        }, { 
-            role: 'user', 
-            content: prompt 
-        }],
-        temperature: 0.1,
-        max_tokens: 1000
-    });
-
     try {
+        const response = await client.chat.completions.create({
+            model: DEFAULT_MODEL,
+            response_format: { type: "json_object" },
+            messages: [{ 
+                role: 'system', 
+                content: 'You are an expert technical recruiter specializing in accurate skill extraction from resumes.' 
+            }, { 
+                role: 'user', 
+                content: prompt 
+            }],
+            temperature: 0.1,
+            max_tokens: 1000
+        });
+
         const content = JSON.parse(response.choices[0].message.content.trim());
         const skills = Array.isArray(content.skills) ? content.skills : [];
         cache.set(cacheKey, skills);
         return skills;
     } catch (e) {
-        console.error("Skill extraction parse error:", e);
-        const text = response.choices[0].message.content.trim();
-        const jsonMatch = text.match(/\[[\s\S]*\]/);
-        if (jsonMatch) return JSON.parse(jsonMatch[0]);
-        return text.replace(/[\[\]"]/g, '').split(',').map(s => s.trim()).filter(Boolean);
+        console.warn("Skill extraction API error, using keyword fallback:", e.message);
+        const fallbackSkills = fallbackExtractSkills(resumeText);
+        cache.set(cacheKey, fallbackSkills);
+        return fallbackSkills;
     }
+}
+
+const COMMON_SKILLS = [
+    "JavaScript", "TypeScript", "Python", "Java", "C++", "C#", "Go", "Rust", "PHP", "Ruby", "Swift", "Kotlin",
+    "HTML", "CSS", "React", "Angular", "Vue.js", "Next.js", "Node.js", "Express", "Django", "Flask", "Spring Boot",
+    "SQL", "MySQL", "PostgreSQL", "MongoDB", "Redis", "Elasticsearch", "GraphQL", "REST API",
+    "Git", "GitHub", "Docker", "Kubernetes", "AWS", "GCP", "Azure", "CI/CD", "Linux", "Nginx",
+    "Machine Learning", "Deep Learning", "TensorFlow", "PyTorch", "Pandas", "NumPy", "Scikit-Learn", "Data Analysis",
+    "Agile", "Scrum", "Jira", "Unit Testing", "Jest", "Cypress"
+];
+
+function fallbackExtractSkills(resumeText) {
+    if (!resumeText) return [];
+    const textLower = resumeText.toLowerCase();
+    const found = [];
+    for (const skill of COMMON_SKILLS) {
+        const escaped = skill.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
+        const regex = new RegExp(`\\b${escaped}\\b`, 'i');
+        if (regex.test(textLower)) {
+            found.push(skill);
+        }
+    }
+    return found;
 }
 
 /**
