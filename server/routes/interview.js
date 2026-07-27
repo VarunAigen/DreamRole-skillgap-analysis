@@ -12,9 +12,10 @@ const { validate, interviewGenerateSchema, interviewEvaluateSchema } = require('
 const { batchEvaluateAnswers } = require('../services/openaiService');
 const InterviewSession = require('../models/InterviewSession');
 const audioUpload = require('../utils/audioUpload');
+const { requirePlan } = require('../middleware/planGate');
 
 // POST /api/interview/generate  — resume-based interview questions (calls OpenAI)
-router.post('/generate', firebaseAuth(), validate(interviewGenerateSchema), generateInterviewQuestionsController);
+router.post('/generate', firebaseAuth(), requirePlan('interview'), validate(interviewGenerateSchema), generateInterviewQuestionsController);
 
 // POST /api/interview/evaluate  — evaluate one answer (calls OpenAI)
 router.post('/evaluate', firebaseAuth(), validate(interviewEvaluateSchema), evaluateInterviewAnswerController);

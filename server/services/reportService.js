@@ -25,6 +25,21 @@ async function launchBrowser() {
 }
 
 /**
+ * Escape HTML special characters to prevent XSS in Puppeteer-rendered PDFs.
+ * All user-generated and AI-generated text MUST pass through this before
+ * being interpolated into the HTML template string.
+ */
+function escapeHtml(str) {
+    if (str == null) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+/**
  * Generate a PDF report from analysis data.
  * @param {Object} data - Report data
  * @returns {Promise<Buffer>} - PDF buffer
@@ -52,7 +67,7 @@ async function generatePDFReport(data) {
     }[alignment_stage] || '#3b82f6';
 
     const skillTag = (skill, color = '#dbeafe', textColor = '#1e40af') =>
-        `<span style="background:${color};color:${textColor};padding:3px 10px;border-radius:20px;font-size:12px;margin:3px;display:inline-block;">${skill}</span>`;
+        `<span style="background:${color};color:${textColor};padding:3px 10px;border-radius:20px;font-size:12px;margin:3px;display:inline-block;">${escapeHtml(skill)}</span>`;
 
     const html = `
 <!DOCTYPE html>
@@ -80,25 +95,25 @@ async function generatePDFReport(data) {
 <body>
   <div class="header">
     <h1>📋 DreamRole Career Report</h1>
-    <p>Generated on ${date}</p>
-    <div class="role-name">🎯 Target Role: ${role}</div>
-    <div class="stage-badge">${alignment_stage}</div>
+    <p>Generated on ${escapeHtml(date)}</p>
+    <div class="role-name">🎯 Target Role: ${escapeHtml(role)}</div>
+    <div class="stage-badge">${escapeHtml(alignment_stage)}</div>
   </div>
 
   <div class="section">
     <div class="section-title">💡 AI Analysis</div>
-    <div class="feedback-text">${feedback || 'Resume analyzed successfully. Keep building your skills!'}</div>
+    <div class="feedback-text">${escapeHtml(feedback) || 'Resume analyzed successfully. Keep building your skills!'}</div>
     ${weak_areas.length > 0 ? `
       <div style="margin-top: 16px;">
         <h4 style="font-size: 14px; font-weight: 600; color: #475569; margin-bottom: 8px;">Focus Areas</h4>
-        <div>${weak_areas.map(area => `<span style="background:#fffbeb;color:#b45309;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;border:1px solid #fcd34d;margin-right:6px;display:inline-block;margin-bottom:6px;">${area}</span>`).join('')}</div>
+        <div>${weak_areas.map(area => `<span style="background:#fffbeb;color:#b45309;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;border:1px solid #fcd34d;margin-right:6px;display:inline-block;margin-bottom:6px;">${escapeHtml(area)}</span>`).join('')}</div>
       </div>
     ` : ''}
     ${resume_improvements.length > 0 ? `
       <div style="margin-top: 16px; border-top: 1px solid #e2e8f0; padding-top: 16px;">
         <h4 style="font-size: 14px; font-weight: 600; color: #475569; margin-bottom: 8px;">Actionable Resume Improvements</h4>
         <ul style="font-size: 13px; color: #374151; padding-left: 20px; line-height: 1.6;">
-          ${resume_improvements.map(tip => `<li>${tip}</li>`).join('')}
+          ${resume_improvements.map(tip => `<li>${escapeHtml(tip)}</li>`).join('')}
         </ul>
       </div>
     ` : ''}
@@ -119,9 +134,9 @@ async function generatePDFReport(data) {
     <div class="section-title">🚀 Recommended Projects</div>
     ${projects.slice(0, 4).map(p => `
       <div class="project-item">
-        <div class="project-title">${p.title}</div>
-        <div style="font-size:12px;color:#64748b;margin:4px 0;">${(p.description || '').substring(0, 120)}${(p.description || '').length > 120 ? '...' : ''}</div>
-        ${p.github && p.github.trim() ? `<a class="project-link" href="${p.github.trim()}" style="color:#4f46e5;text-decoration:underline;font-size:11px;word-break:break-all;display:block;margin-top:4px;">🔗 ${p.github.trim()}</a>` : '<span style="font-size:11px;color:#94a3b8;">No GitHub link available</span>'}
+        <div class="project-title">${escapeHtml(p.title)}</div>
+        <div style="font-size:12px;color:#64748b;margin:4px 0;">${escapeHtml((p.description || '').substring(0, 120))}${(p.description || '').length > 120 ? '...' : ''}</div>
+        ${p.github && p.github.trim() ? `<a class="project-link" href="${escapeHtml(p.github.trim())}" style="color:#4f46e5;text-decoration:underline;font-size:11px;word-break:break-all;display:block;margin-top:4px;">🔗 ${escapeHtml(p.github.trim())}</a>` : '<span style="font-size:11px;color:#94a3b8;">No GitHub link available</span>'}
       </div>
     `).join('') || '<em style="color:#94a3b8">No projects available for this role</em>'}
   </div>
@@ -130,11 +145,11 @@ async function generatePDFReport(data) {
     <div class="section-title">🏆 Recommended Certifications</div>
     ${certifications.slice(0, 4).map(c => `
       <div class="project-item">
-        <div class="project-title">${c.title}</div>
-        <div style="font-size:12px;color:#64748b;margin:4px 0;font-weight:600;">${c.platform || ''}</div>
-        ${c.link && c.link.trim() ? `<a class="project-link" href="${c.link.trim()}" style="color:#4f46e5;text-decoration:underline;font-size:11px;word-break:break-all;display:block;margin-top:4px;">🔗 ${c.link.trim()}</a>` : '<span style="font-size:11px;color:#94a3b8;">No link available</span>'}
+        <div class="project-title">${escapeHtml(c.title)}</div>
+        <div style="font-size:12px;color:#64748b;margin:4px 0;font-weight:600;">${escapeHtml(c.platform || '')}</div>
+        ${c.link && c.link.trim() ? `<a class="project-link" href="${escapeHtml(c.link.trim())}" style="color:#4f46e5;text-decoration:underline;font-size:11px;word-break:break-all;display:block;margin-top:4px;">🔗 ${escapeHtml(c.link.trim())}</a>` : '<span style="font-size:11px;color:#94a3b8;">No link available</span>'}
       </div>
-    `).join('') || '<em style="color:#94a3b8">No certifications available for this role</em>'}
+    `).join('') || '<em style="color:#94a3b8">No certifications available for this role</em>'}}
   </div>
 
   <div class="footer">

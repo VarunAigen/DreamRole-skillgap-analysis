@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>DreamRole - Project Idea </title>
+  <style>
+    @media print {
+      .no-print {
+        display: none !important;
+      }
+
+      body {
+        background: white !important;
+        padding: 0 !important;
+      }
+
+      .container {
+        border: none !important;
+        box-shadow: none !important;
+        margin: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+      }
+
+      @page {
+        margin: 1.2cm;
+        size: A4;
+      }
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f1f5f9;
+      color: #0f172a;
+      line-height: 1.5;
+      padding: 30px 15px;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 12px;
+      padding: 40px 50px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+      border: 1px solid #cbd5e1;
+    }
+
+    .print-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #1e293b;
+      color: white;
+      padding: 12px 24px;
+      border-radius: 8px;
+      margin-bottom: 24px;
+    }
+
+    .print-btn {
+      background: #6366f1;
+      color: white;
+      border: none;
+      padding: 8px 18px;
+      border-radius: 6px;
+      font-weight: 700;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background 0.2s;
+    }
+
+    .print-btn:hover {
+      background: #4f46e5;
+    }
+
+    header {
+      border-bottom: 3px solid #6366f1;
+      padding-bottom: 16px;
+      margin-bottom: 24px;
+    }
+
+    .badge {
+      display: inline-block;
+      background: #e0e7ff;
+      color: #4338ca;
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      padding: 3px 10px;
+      border-radius: 20px;
+      letter-spacing: 0.05em;
+      margin-bottom: 8px;
+    }
+
+    h1 {
+      font-size: 24px;
+      color: #0f172a;
+      font-weight: 800;
+      line-height: 1.2;
+      margin-bottom: 6px;
+    }
+
+    .subtitle {
+      font-size: 13.5px;
+      color: #64748b;
+      font-weight: 600;
+    }
+
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      padding: 14px 18px;
+      border-radius: 8px;
+      margin-bottom: 24px;
+      font-size: 12px;
+    }
+
+    .meta-item label {
+      color: #64748b;
+      font-size: 10px;
+      text-transform: uppercase;
+      font-weight: 700;
+      display: block;
+      margin-bottom: 2px;
+    }
+
+    .meta-item span {
+      font-weight: 700;
+      color: #1e293b;
+    }
+
+    section {
+      margin-bottom: 24px;
+    }
+
+    h2 {
+      font-size: 15px;
+      color: #1e293b;
+      font-weight: 700;
+      border-bottom: 1px solid #e2e8f0;
+      padding-bottom: 6px;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    h2::before {
+      content: '';
+      width: 4px;
+      height: 16px;
+      background: #6366f1;
+      border-radius: 2px;
+      display: inline-block;
+    }
+
+    p {
+      font-size: 13px;
+      color: #334155;
+      margin-bottom: 10px;
+      text-align: justify;
+    }
+
+    ul {
+      list-style: none;
+      margin-bottom: 10px;
+    }
+
+    ul li {
+      font-size: 12.5px;
+      color: #334155;
+      margin-bottom: 6px;
+      padding-left: 18px;
+      position: relative;
+    }
+
+    ul li::before {
+      content: '•';
+      color: #6366f1;
+      font-weight: bold;
+      position: absolute;
+      left: 4px;
+      font-size: 16px;
+      top: -2px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+      margin-bottom: 14px;
+      font-size: 12px;
+    }
+
+    th,
+    td {
+      border: 1px solid #cbd5e1;
+      padding: 8px 12px;
+      text-align: left;
+    }
+
+    th {
+      background: #f1f5f9;
+      color: #1e293b;
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 10px;
+      letter-spacing: 0.05em;
+    }
+
+    td {
+      color: #334155;
+    }
+
+    tr:nth-child(even) {
+      background: #f8fafc;
+    }
+
+    /* Clean Diagram Box */
+    .arch-diagram {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 10px;
+      margin-bottom: 16px;
+    }
+
+    .arch-layer {
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 12px 16px;
+      text-align: center;
+    }
+
+    .arch-title {
+      font-size: 11px;
+      font-weight: 800;
+      color: #4338ca;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 4px;
+    }
+
+    .arch-desc {
+      font-size: 12px;
+      font-weight: 600;
+      color: #0f172a;
+    }
+
+    .arch-arrow {
+      text-align: center;
+      color: #6366f1;
+      font-weight: 800;
+      font-size: 14px;
+      margin: -4px 0;
+    }
+
+    .arch-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .tag-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .tag {
+      background: #e0e7ff;
+      border: 1px solid #c7d2fe;
+      color: #3730a3;
+      font-size: 11.5px;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-weight: 600;
+      display: inline-block;
+    }
+
+    footer {
+      border-top: 1px solid #e2e8f0;
+      padding-top: 14px;
+      margin-top: 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      color: #94a3b8;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="print-bar no-print">
+    <span>📄 <strong>DreamRole Project Synopsis</strong> — Ready for PDF Export</span>
+    <button class="print-btn" onclick="window.print()">Print / Save as PDF</button>
+  </div>
+
+  <div class="container">
+    <header>
+      <span class="badge">Project Synopsis</span>
+      <h1>DreamRole: AI-Driven Skill-Gap Analysis & Career Readiness Platform</h1>
+      <p class="subtitle">An End-to-End Artificial Intelligence Platform for Automated Skill Extraction, Rubric JD Gap
+        Analysis, and STAR Speech Interview Simulation</p>
+    </header>
+
+    <div class="meta-grid">
+      <div class="meta-item">
+        <label>Project Domain</label>
+        <span>AI / NLP / HR-Tech / EdTech</span>
+      </div>
+      <div class="meta-item">
+        <label>Architecture</label>
+        <span>Microservice REST API + SPA</span>
+      </div>
+      <div class="meta-item">
+        <label>Live Deployment</label>
+        <span>Netlify (FE) & Render (BE)</span>
+      </div>
+    </div>
+
+    <section>
+      <h2>1. Abstract & Executive Summary</h2>
+      <p>
+        The modern hiring ecosystem relies heavily on automated Applicant Tracking Systems (ATS) and strict technical
+        rubrics. College graduates and job candidates frequently experience high rejection rates due to unstructured
+        resume formatting, missing technical keywords, and a lack of objective, real-time interview practice.
+        <strong>DreamRole</strong> addresses this gap by offering a unified, web-based AI platform that extracts
+        candidate skills, performs a weighted 4-tier Job Description (JD) gap analysis, simulates realistic speech/video
+        interviews with STAR-framework evaluation, and generates customized learning roadmaps.
+      </p>
+    </section>
+
+    <section>
+      <h2>2. Problem Statement</h2>
+      <ul>
+        <li><strong>High ATS Rejection Rates</strong>: Candidates are filtered out automatically due to uncalibrated
+          terminology or missing keyword density.</li>
+        <li><strong>Unclear Skill Gaps</strong>: Job seekers lack visibility into <em>which specific technical
+            competencies</em> or <em>projects</em> are missing for a target job role.</li>
+        <li><strong>Interview Performance Anxiety</strong>: Traditional preparation lacks realistic technical and
+          behavioral interview practice with immediate, structured feedback.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>3. Role of Natural Language Processing (NLP) & AI Stack</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>NLP / AI Capability</th>
+            <th>Underlying Technology</th>
+            <th>Function in DreamRole System</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Named Entity Recognition (NER)</strong></td>
+            <td>OpenAI NLP + Custom Regex Normalizer</td>
+            <td>Extracts technical tools, frameworks, and programming languages from raw PDF resumes; normalizes
+              variants (e.g., *"ReactJS"* → *"React"*).</td>
+          </tr>
+          <tr>
+            <td><strong>Semantic Similarity Matching</strong></td>
+            <td>Vector Contextual Matching Engine</td>
+            <td>Compares JD terms against candidate skills. Detects <em>Adjacent Matches</em> (e.g., candidate knows
+              *"GCP"* when JD requires *"AWS"*).</td>
+          </tr>
+          <tr>
+            <td><strong>Automatic Speech Recognition (ASR)</strong></td>
+            <td>OpenAI Whisper API (`whisper-1`)</td>
+            <td>Transcribes live spoken audio during video interviews with 98%+ precision on technical jargon
+              (*Kubernetes*, *PostgreSQL*, *CI/CD*).</td>
+          </tr>
+          <tr>
+            <td><strong>Text-to-Speech (TTS) Synthesis</strong></td>
+            <td>OpenAI Speech API (`tts-1`)</td>
+            <td>Generates realistic human voice audio (`nova` voice) for the AI Interviewer question readout.</td>
+          </tr>
+          <tr>
+            <td><strong>STAR Framework Evaluation</strong></td>
+            <td>GPT-4o-mini Rubric Evaluation Model</td>
+            <td>Grades interview answers on 4 dimensions (Technical Accuracy 40%, Specificity 25%, Clarity 20%,
+              Relevance 15%) and generates <strong>HR Re-framed Model Answers</strong>.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>4. Key Functional Modules</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Module Name</th>
+            <th>Technical Description & User Outcome</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>1. Resume Skill Extractor</strong></td>
+            <td>Parses raw PDF/DOCX resumes using `pdf-parse`, extracts named skills, tools, and projects, and builds a
+              structured profile snapshot.</td>
+          </tr>
+          <tr>
+            <td><strong>2. Rubric JD Gap Analyzer</strong></td>
+            <td>Evaluates resumes against JDs using a weighted 4-tier rubric. Identifies hard disqualifiers, missing
+              keywords, formatting issues, and actionable non-fabricating suggestions.</td>
+          </tr>
+          <tr>
+            <td><strong>3. AI Video & Speech Interview Engine</strong></td>
+            <td>Simulates live video interviews, records candidate speech, transcribes with Whisper, and evaluates
+              response structure using the STAR method with HR re-framed answers.</td>
+          </tr>
+          <tr>
+            <td><strong>4. Adaptive Testing & Roadmaps</strong></td>
+            <td>Generates targeted MCQs based on identified missing skills and creates 5-7 step step-by-step career path
+              roadmaps.</td>
+          </tr>
+          <tr>
+            <td><strong>5. Mentor & Analytics Dashboard</strong></td>
+            <td>Tracks student progress, speech metrics (WPM, volume, pauses, filler words), overall readiness scores,
+              and session histories.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>5. System Architecture</h2>
+      <div class="arch-diagram">
+        <div class="arch-layer">
+          <div class="arch-title">Frontend Layer (User Interface)</div>
+          <div class="arch-desc">React.js (Vite) &bull; Tailwind CSS &bull; Lucide Icons &bull; Recharts &bull; WebAudio
+            & WebGL API</div>
+        </div>
+        <div class="arch-arrow">↓ REST API Calls (Bearer Firebase Auth JWT) ↓</div>
+        <div class="arch-layer">
+          <div class="arch-title">Backend Application Layer</div>
+          <div class="arch-desc">Node.js &bull; Express.js &bull; Zod Schema Validation &bull; Per-User Rate Limiter
+          </div>
+        </div>
+        <div class="arch-arrow">↓ Integrated Services ↓</div>
+        <div class="arch-row">
+          <div class="arch-layer">
+            <div class="arch-title">Data Store</div>
+            <div class="arch-desc">MongoDB Atlas &bull; Firebase Auth</div>
+          </div>
+          <div class="arch-layer">
+            <div class="arch-title">AI Engine</div>
+            <div class="arch-desc">OpenAI GPT-4o-mini &bull; Whisper ASR &bull; TTS-1</div>
+          </div>
+          <div class="arch-layer">
+            <div class="arch-title">PDF Engine</div>
+            <div class="arch-desc">Puppeteer-Core &bull; Sparticuz Chromium</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>6. Technology Stack Summary</h2>
+      <div class="tag-group">
+        <span class="tag">React 18</span>
+        <span class="tag">Vite</span>
+        <span class="tag">Tailwind CSS</span>
+        <span class="tag">Node.js</span>
+        <span class="tag">Express.js</span>
+        <span class="tag">MongoDB Atlas</span>
+        <span class="tag">Firebase Auth</span>
+        <span class="tag">OpenAI API (GPT-4o-mini)</span>
+        <span class="tag">Whisper ASR</span>
+        <span class="tag">OpenAI TTS</span>
+        <span class="tag">Zod Validation</span>
+        <span class="tag">Netlify (FE)</span>
+        <span class="tag">Render (BE)</span>
+      </div>
+    </section>
+
+    <section>
+      <h2>7. Key System Innovations & Conclusion</h2>
+      <ul>
+        <li><strong>Honesty-Guarded AI Engine</strong>: Prevents resume language fabrication by framing missing skills
+          as projects/courses to acquire.</li>
+        <li><strong>Hybrid Speech Pipeline</strong>: Merges real-time browser typing animation with server-side OpenAI
+          Whisper transcription for 98%+ technical term accuracy.</li>
+        <li><strong>Structured HR Re-Framing</strong>: Teaches candidates how senior engineers and HR managers structure
+          technical answers.</li>
+      </ul>
+    </section>
+
+    <footer>
+      <span>DreamRole Project Synopsis &bull; Project</span>
+      <span>Live App: https://dreamrole-skillgap.netlify.app</span>
+    </footer>
+  </div>
+
+</body>
+
+</html>

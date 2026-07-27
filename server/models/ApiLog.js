@@ -15,10 +15,11 @@ const ApiLogSchema = new mongoose.Schema({
     isError: { type: Boolean, default: false },
     errorMessage: { type: String, default: null }
 }, {
-    timestamps: true,
-    // Auto-expire logs after 90 days
-    expires: '90d'
+    timestamps: true
 });
+
+// Proper MongoDB TTL index — auto-deletes documents 60 days after creation
+ApiLogSchema.index({ createdAt: 1 }, { expireAfterSeconds: 60 * 60 * 24 * 60 });
 
 ApiLogSchema.index({ endpoint: 1, createdAt: -1 });
 ApiLogSchema.index({ uid: 1, createdAt: -1 });

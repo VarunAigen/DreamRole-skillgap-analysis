@@ -1,6 +1,7 @@
 const { extractTextFromPDF } = require('../services/pdfService');
 const upload = require('../utils/multerConfig');
 const UserProfile = require('../models/UserProfile');
+const { uploadResumePdf, deleteResumePdf } = require('../utils/gridfsStorage');
 
 const uploadResume = [
     upload.single('resume'),
@@ -16,14 +17,32 @@ const uploadResume = [
                 return res.status(422).json({ error: 'Could not extract meaningful text from the PDF. Please try a different file.' });
             }
 
-            // Save PDF data and text to the database if authenticated (unless sessionOnly is requested)
+            // Save PDF to GridFS and store reference in user profile
             if (req.user && req.user.uid && req.query.sessionOnly !== 'true') {
-                const base64Data = req.file.buffer.toString('base64');
+                // Upload to GridFS
+                const fileId = await uploadResumePdf(
+                    req.user.uid,
+                    req.file.buffer,
+                    req.file.originalname,
+                    req.file.mimetype
+                );
+
+                // Delete old GridFS file if one exists
+                const existingProfile = await UserProfile.findOne({ uid: req.user.uid });
+                if (existingProfile && existingProfile.resume_pdf_file_id) {
+                    try {
+                        await deleteResumePdf(existingProfile.resume_pdf_file_id);
+                    } catch (e) {
+                        console.warn('[Resume] Could not delete old GridFS file:', e.message);
+                    }
+                }
+
                 await UserProfile.findOneAndUpdate(
                     { uid: req.user.uid },
                     {
                         $set: {
-                            resume_pdf_data: base64Data,
+                            resume_pdf_file_id: fileId,
+                            resume_pdf_data: '',           // Clear legacy base64 storage
                             resume_pdf_name: req.file.originalname,
                             resume_pdf_mime: req.file.mimetype,
                             resume_text: resume_text

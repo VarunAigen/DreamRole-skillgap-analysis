@@ -18,9 +18,23 @@ const UserProfileSchema = new mongoose.Schema({
     // Last resume data
     resume_text: { type: String, default: '' },
     extracted_skills: { type: [String], default: [] },
-    resume_pdf_data: { type: String, default: '' },
+    resume_pdf_data: { type: String, default: '' },       // LEGACY: base64 (cleared on new uploads)
     resume_pdf_name: { type: String, default: '' },
     resume_pdf_mime: { type: String, default: '' },
+    resume_pdf_file_id: { type: mongoose.Schema.Types.ObjectId, default: null },  // GridFS file ID
+
+    // Subscription plan & billing
+    plan: { type: String, enum: ['free', 'pro'], default: 'free' },
+    stripeCustomerId: { type: String, default: null },
+    stripeSubscriptionId: { type: String, default: null },
+
+    // Monthly usage tracking (reset monthly by planGate middleware)
+    usage: {
+        jd_analysis: { type: Number, default: 0 },
+        interview: { type: Number, default: 0 },
+        report: { type: Number, default: 0 },
+        resetDate: { type: Date, default: () => new Date() }
+    },
 
     // Last analysis snapshot (lightweight summary for dashboard)
     last_alignment_stage: { type: String, default: null },

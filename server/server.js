@@ -47,7 +47,9 @@ const aiLimiter = rateLimit({
     windowMs: 1 * 60 * 1000, // 1 minute
     max: 20,
     // Key by authenticated user uid (falls back to IP for unauthenticated requests)
-    keyGenerator: (req) => req.user?.uid || req.ip,
+    keyGenerator: (req) => req.user?.uid || req.ip || 'unknown',
+    // Disable IPv6 validation warning (we key by uid primarily, IP is fallback)
+    validate: { xForwardedForHeader: false, keyGeneratorIpFallback: false },
     message: { error: "Too many requests — please slow down." }
 });
 app.use('/api/skills/extract',        aiLimiter);

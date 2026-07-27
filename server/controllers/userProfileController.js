@@ -1,4 +1,5 @@
 const UserProfile = require('../models/UserProfile');
+const { downloadResumePdf, deleteResumePdf } = require('../utils/gridfsStorage');
 
 /**
  * GET /api/profile
@@ -95,6 +96,17 @@ async function updateProfile(req, res) {
 async function clearResume(req, res) {
     try {
         const uid = req.user.uid;
+
+        // Delete GridFS file if it exists
+        const existing = await UserProfile.findOne({ uid }).lean();
+        if (existing && existing.resume_pdf_file_id) {
+            try {
+                await deleteResumePdf(existing.resume_pdf_file_id);
+            } catch (e) {
+                console.warn('[clearResume] Could not delete GridFS file:', e.message);
+            }
+        }
+
         await UserProfile.findOneAndUpdate(
             { uid },
             { 
@@ -107,7 +119,8 @@ async function clearResume(req, res) {
                     internships: [],
                     resume_pdf_data: '',
                     resume_pdf_name: '',
-                    resume_pdf_mime: ''
+                    resume_pdf_mime: '',
+                    resume_pdf_file_id: null
                 } 
             },
             { upsert: false }
@@ -127,15 +140,35 @@ async function downloadResume(req, res) {
     try {
         const uid = req.user.uid;
         const profile = await UserProfile.findOne({ uid }).lean();
-        if (!profile || !profile.resume_pdf_data) {
+
+        if (!profile) {
             return res.status(404).json({ error: 'No resume PDF available for download.' });
         }
 
-        const pdfBuffer = Buffer.from(profile.resume_pdf_data, 'base64');
-        res.setHeader('Content-Type', profile.resume_pdf_mime || 'application/pdf');
         const filename = profile.resume_pdf_name || 'resume.pdf';
-        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-        res.send(pdfBuffer);
+        const mime = profile.resume_pdf_mime || 'application/pdf';
+
+        // Prefer GridFS if available
+        if (profile.resume_pdf_file_id) {
+            res.setHeader('Content-Type', mime);
+            res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+            const stream = downloadResumePdf(profile.resume_pdf_file_id);
+            stream.on('error', (err) => {
+                console.error('GridFS stream error:', err.message);
+                res.status(500).json({ error: 'Failed to stream resume from storage' });
+            });
+            return stream.pipe(res);
+        }
+
+        // Legacy fallback: base64 in document
+        if (profile.resume_pdf_data) {
+            const pdfBuffer = Buffer.from(profile.resume_pdf_data, 'base64');
+            res.setHeader('Content-Type', mime);
+            res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+            return res.send(pdfBuffer);
+        }
+
+        return res.status(404).json({ error: 'No resume PDF available for download.' });
     } catch (err) {
         console.error('downloadResume error:', err.message);
         res.status(500).json({ error: 'Failed to download resume', details: err.message });
