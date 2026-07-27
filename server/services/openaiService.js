@@ -75,26 +75,39 @@ ${resumeText.substring(0, 6000)}`;
 }
 
 const COMMON_SKILLS = [
-    "JavaScript", "TypeScript", "Python", "Java", "C++", "C#", "Go", "Rust", "PHP", "Ruby", "Swift", "Kotlin",
-    "HTML", "CSS", "React", "Angular", "Vue.js", "Next.js", "Node.js", "Express", "Django", "Flask", "Spring Boot",
-    "SQL", "MySQL", "PostgreSQL", "MongoDB", "Redis", "Elasticsearch", "GraphQL", "REST API",
-    "Git", "GitHub", "Docker", "Kubernetes", "AWS", "GCP", "Azure", "CI/CD", "Linux", "Nginx",
-    "Machine Learning", "Deep Learning", "TensorFlow", "PyTorch", "Pandas", "NumPy", "Scikit-Learn", "Data Analysis",
-    "Agile", "Scrum", "Jira", "Unit Testing", "Jest", "Cypress"
+    // Programming Languages
+    "Python", "Java", "C++", "C", "C#", "JavaScript", "TypeScript", "Go", "Rust", "PHP", "Ruby", "Swift", "Kotlin", "CUDA",
+    // Web & Mobile Frameworks
+    "React", "React.js", "React Native", "Node.js", "Express", "Express.js", "FastAPI", "Django", "Flask", "Spring Boot", 
+    "Angular", "Vue.js", "Next.js", "Vite", "ASP.NET", "Bootstrap", "Tailwind CSS", "HTML", "CSS", "Expo",
+    // AI, ML & Data Science
+    "Machine Learning", "Deep Learning", "NLP", "Natural Language Processing", "OpenAI API", "RAG", "ChromaDB",
+    "TensorFlow", "PyTorch", "Scikit-Learn", "Pandas", "NumPy", "CUDA", "Sentiment Analysis", "Classification", "Regression",
+    // Databases & Cloud
+    "SQL", "MySQL", "PostgreSQL", "MongoDB", "SQLite", "SQL Server", "Redis", "Firebase", "AWS", "GCP", "Azure", "Cloud Computing",
+    // Developer Tools & DevOps
+    "Git", "GitHub", "Docker", "Kubernetes", "CI/CD", "Linux", "REST API", "GraphQL", "JWT",
+    // Cybersecurity & Security
+    "Cybersecurity", "Threat Analysis", "Risk Mitigation", "Threat Recognition", "Secure Systems"
 ];
 
 function fallbackExtractSkills(resumeText) {
     if (!resumeText) return [];
     const textLower = resumeText.toLowerCase();
-    const found = [];
+    const found = new Set();
+
     for (const skill of COMMON_SKILLS) {
         const escaped = skill.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
-        const regex = new RegExp(`\\b${escaped}\\b`, 'i');
+        const regex = new RegExp(`(?:^|[^a-zA-Z0-9_#+])${escaped}(?:$|[^a-zA-Z0-9_#+])`, 'i');
         if (regex.test(textLower)) {
-            found.push(skill);
+            // Normalize variants (e.g. React.js -> React, Express.js -> Express)
+            let norm = skill;
+            if (norm === 'React.js') norm = 'React';
+            if (norm === 'Express.js') norm = 'Express';
+            found.add(norm);
         }
     }
-    return found;
+    return Array.from(found);
 }
 
 /**
