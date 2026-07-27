@@ -240,24 +240,88 @@ Generate exactly ${count} multiple-choice interview questions:
 }
 No explanation, no markdown.`;
 
-    const response = await client.chat.completions.create({
-        model: DEFAULT_MODEL,
-        response_format: { type: "json_object" },
-        messages: [{ role: 'user', content: prompt }],
-        temperature: 0.5,
-        max_tokens: 1500
-    });
-
     try {
+        const response = await client.chat.completions.create({
+            model: DEFAULT_MODEL,
+            response_format: { type: "json_object" },
+            messages: [{ role: 'user', content: prompt }],
+            temperature: 0.5,
+            max_tokens: 1500
+        });
+
         const content = response.choices[0].message.content.trim();
         const parsed = JSON.parse(content);
         const questions = parsed.questions || [];
-        cache.set(cacheKey, questions);
-        return questions;
+        if (questions.length > 0) {
+            cache.set(cacheKey, questions);
+            return questions;
+        }
+        return generateFallbackTest(role, missingSkills, count);
     } catch (e) {
-        console.error("Test generation parse error:", e);
-        return [];
+        console.warn("Test generation API error, using fallback:", e.message);
+        const fallback = generateFallbackTest(role, missingSkills, count);
+        cache.set(cacheKey, fallback);
+        return fallback;
     }
+}
+
+function generateFallbackTest(role, missingSkills, count = 5) {
+    const targetSkill = (missingSkills && missingSkills.length > 0) ? missingSkills[0] : 'core engineering concepts';
+    
+    const defaultQuestions = [
+        {
+            question: `Which of the following best describes the primary responsibility of a ${role}?`,
+            options: [
+                `Designing, developing, and maintaining software solutions aligned with role requirements`,
+                `Managing financial accounting and tax compliance`,
+                `Handling office logistics and hardware maintenance`,
+                `Performing manual data entry without code automation`
+            ],
+            correct_answer: `Designing, developing, and maintaining software solutions aligned with role requirements`
+        },
+        {
+            question: `When working with ${targetSkill} in a ${role} position, why is modular design and clean architecture essential?`,
+            options: [
+                `It improves system maintainability, reusability, and automated testing capabilities`,
+                `It increases the binary file size unnecessarily`,
+                `It locks the codebase to a single vendor`,
+                `It prevents team members from collaborating`
+            ],
+            correct_answer: `It improves system maintainability, reusability, and automated testing capabilities`
+        },
+        {
+            question: `Which data structure provides O(1) average time complexity for key-value lookups?`,
+            options: [
+                `Hash Table / Dictionary`,
+                `Singly Linked List`,
+                `Binary Search Tree`,
+                `Array`
+            ],
+            correct_answer: `Hash Table / Dictionary`
+        },
+        {
+            question: `In RESTful API design, which HTTP method is typically used to update an existing resource idempotently?`,
+            options: [
+                `PUT`,
+                `POST`,
+                `GET`,
+                `DELETE`
+            ],
+            correct_answer: `PUT`
+        },
+        {
+            question: `What is the primary benefit of using Version Control Systems like Git in ${role} projects?`,
+            options: [
+                `Tracking code changes, supporting branching workflows, and enabling team collaboration`,
+                `Replacing database storage for user profiles`,
+                `Automatically compiling source code into machine binaries`,
+                `Encrypting network traffic between client and server`
+            ],
+            correct_answer: `Tracking code changes, supporting branching workflows, and enabling team collaboration`
+        }
+    ];
+
+    return defaultQuestions.slice(0, count);
 }
 
 /**
@@ -719,15 +783,15 @@ CRITICAL GUARDRAILS:
 - Be specific with the missing keyword list — pull exact terms from the JD's tech stack, not generic categories.
 - Limit: missing_keywords max 10, projects max 2, certifications max 2, actionable_suggestions max 5.`;
 
-    const response = await client.chat.completions.create({
-        model: DEFAULT_MODEL,
-        response_format: { type: "json_object" },
-        messages: [{ role: 'user', content: prompt }],
-        temperature: 0.3,
-        max_tokens: 3000
-    });
-
     try {
+        const response = await client.chat.completions.create({
+            model: DEFAULT_MODEL,
+            response_format: { type: "json_object" },
+            messages: [{ role: 'user', content: prompt }],
+            temperature: 0.3,
+            max_tokens: 3000
+        });
+
         const content = response.choices[0].message.content.trim();
         const parsed = JSON.parse(content);
         
@@ -761,9 +825,55 @@ CRITICAL GUARDRAILS:
         cache.set(cacheKey, parsed);
         return parsed;
     } catch (e) {
-        console.error("JD Match parsing error:", e);
-        throw new Error("Failed to parse AI response for JD match");
+        console.warn("JD Match API error, using fallback analyzer:", e.message);
+        const fallback = generateFallbackJdMatch(resumeText, jdText);
+        cache.set(cacheKey, fallback);
+        return fallback;
     }
+}
+
+function generateFallbackJdMatch(resumeText, jdText) {
+    const resumeSkills = fallbackExtractSkills(resumeText);
+    const jdSkills = fallbackExtractSkills(jdText);
+    
+    const matched = jdSkills.filter(s => resumeSkills.includes(s));
+    const missing = jdSkills.filter(s => !resumeSkills.includes(s));
+    
+    const score = jdSkills.length > 0 ? Math.round((matched.length / jdSkills.length) * 100) : 70;
+    const likelihood = score >= 75 ? 'high' : (score >= 50 ? 'medium' : 'low');
+
+    return {
+        overall_score: score,
+        match_score: score,
+        hard_requirement_flags: [
+            { requirement: "Technical Competencies", status: score >= 50 ? "met" : "not_met", note: `${matched.length} of ${jdSkills.length} core technical requirements identified in resume.` }
+        ],
+        matched_keywords: matched.length > 0 ? matched : resumeSkills.slice(0, 5),
+        adjacent_matches: [],
+        missing_keywords: missing.slice(0, 8),
+        formatting_issues: ["Ensure technical section uses standard industry terms for automated ATS indexing."],
+        actionable_suggestions: missing.map(m => ({
+            type: "add_project",
+            suggestion: `Build a project or take a course showcasing ${m} experience before applying.`,
+            honesty_note: "Only add this to your resume after acquiring hands-on experience."
+        })),
+        shortlist_likelihood: likelihood,
+        shortlist_reasoning: `Matched ${matched.length} core technical competencies from the job description. ${missing.length > 0 ? 'Focus on closing missing skill gaps in ' + missing.slice(0, 3).join(', ') + '.' : 'Strong alignment detected.'}`,
+        projects: missing.slice(0, 2).map(m => ({
+            title: `${m} Application Architecture`,
+            description: `Build an end-to-end project utilizing ${m} to demonstrate hands-on competence.`,
+            tags: [m],
+            link: `https://github.com/topics/${m.toLowerCase().replace(/[^a-z0-9]/g, '')}`
+        })),
+        certifications: [],
+        ats_check: {
+            score,
+            feedback: `Matched ${matched.length} requirements.`,
+            formatting_issues: []
+        },
+        summary_update: `Matched ${matched.length} requirements.`,
+        suggested_bullet_points: []
+    };
 }
 
 /** Expose cache stats for admin monitoring */

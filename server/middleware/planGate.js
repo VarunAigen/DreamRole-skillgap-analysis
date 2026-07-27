@@ -6,9 +6,9 @@ const UserProfile = require('../models/UserProfile');
  * 'free' users are capped per calendar month.
  */
 const PLAN_LIMITS = {
-    jd_analysis: { free: 3,  pro: Infinity },
-    interview:   { free: 2,  pro: Infinity },
-    report:      { free: 3,  pro: Infinity }
+    jd_analysis: { free: 100, pro: Infinity },
+    interview:   { free: 100, pro: Infinity },
+    report:      { free: 100, pro: Infinity }
 };
 
 /**
