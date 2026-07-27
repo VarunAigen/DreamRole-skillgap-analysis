@@ -22,6 +22,10 @@ if (!admin.apps.length) {
     }
 }
 
+const ADMIN_EMAILS = new Set([
+    'varun1973s@gmail.com'
+]);
+
 /**
  * Middleware: verifies Firebase ID token from Authorization header.
  * On success: sets req.user = { uid, email, name, role }
@@ -43,11 +47,14 @@ function firebaseAuth(allowGuest = false) {
 
         try {
             const decoded = await admin.auth().verifyIdToken(token);
+            const userEmail = (decoded.email || '').toLowerCase();
+            const role = ADMIN_EMAILS.has(userEmail) ? 'admin' : (decoded.role || 'student');
+
             req.user = {
                 uid: decoded.uid,
                 email: decoded.email || '',
                 name: decoded.name || decoded.email || 'User',
-                role: decoded.role || 'student',  // custom claim set via Firebase Admin
+                role: role,
                 picture: decoded.picture || null
             };
             next();
